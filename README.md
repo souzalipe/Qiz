@@ -27,6 +27,8 @@ lib/
     server.ts        Cliente Supabase para o servidor (Server Components)
 types/
   database.ts        Tipos do banco (gerados pelo Supabase a partir da Fase 2)
+supabase/
+  migrations/        Migrations SQL versionadas (estrutura do banco + RLS)
 ```
 
 ## Como rodar localmente
@@ -62,8 +64,32 @@ npx shadcn@latest add dialog
 
 O `components.json` já está configurado; os componentes vão para `components/ui`.
 
+## Banco de dados (Supabase)
+
+A estrutura do banco fica em `supabase/migrations/`, em arquivos SQL
+versionados e aplicados em ordem (o prefixo é a data/hora):
+
+| Arquivo | O que faz |
+| ------- | --------- |
+| `20261012120000_criar_tabelas_quiz.sql` | Cria as 6 tabelas, chaves estrangeiras e índices |
+| `20261012120100_rls_politicas_iniciais.sql` | Ativa o RLS e cria as políticas iniciais |
+
+As duas migrations já estão aplicadas no projeto Supabase do quiz
+(ref `yuonmgkzbzvytxdvhytr`, organização "Felipe Projects").
+
+Para aplicar num projeto Supabase pela linha de comando:
+
+```bash
+npx supabase login
+npx supabase link --project-ref <id-do-projeto>
+npx supabase db push
+```
+
+Nunca altere uma migration que já foi aplicada: para mudar a estrutura, crie
+uma nova migration (`npx supabase migration new <nome>`).
+
 ## Fases
 
 - [x] **Fase 1 — Fundação:** projeto, tema, shadcn/ui e cliente do Supabase.
-- [ ] **Fase 2 — Banco de dados:** tabelas, RLS e tipos gerados.
+- [x] **Fase 2 — Banco de dados:** tabelas, RLS e tipos gerados.
 - [ ] Próximas fases: fluxo do quiz, cadastro/login, resultados e deploy.
