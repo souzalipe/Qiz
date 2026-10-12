@@ -24,7 +24,7 @@ export default function Home() {
           <Recycle className="size-10" aria-hidden />
         </div>
         <h1 className="text-3xl font-bold tracking-tight">
-          Olá, Quiz Circular
+         Seja-bem vindo ao Quiz Circular
         </h1>
         <p className="text-muted-foreground">
           Teste seus conhecimentos sobre economia circular.
