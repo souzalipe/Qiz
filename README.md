@@ -1,2 +1,2 @@
 # Qiz
-Versão inicial do produto de Mestrado
+Versão inicial do produto de Mestrado. 
