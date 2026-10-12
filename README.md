@@ -74,6 +74,9 @@ versionados e aplicados em ordem (o prefixo é a data/hora):
 | `20261012120000_criar_tabelas_quiz.sql` | Cria as 6 tabelas, chaves estrangeiras e índices |
 | `20261012120100_rls_politicas_iniciais.sql` | Ativa o RLS e cria as políticas iniciais |
 
+As duas migrations já estão aplicadas no projeto Supabase do quiz
+(ref `yuonmgkzbzvytxdvhytr`, organização "Felipe Projects").
+
 Para aplicar num projeto Supabase pela linha de comando:
 
 ```bash
@@ -88,5 +91,5 @@ uma nova migration (`npx supabase migration new <nome>`).
 ## Fases
 
 - [x] **Fase 1 — Fundação:** projeto, tema, shadcn/ui e cliente do Supabase.
-- [ ] **Fase 2 — Banco de dados:** tabelas, RLS e tipos gerados (migrations prontas).
+- [x] **Fase 2 — Banco de dados:** tabelas, RLS e tipos gerados.
 - [ ] Próximas fases: fluxo do quiz, cadastro/login, resultados e deploy.
