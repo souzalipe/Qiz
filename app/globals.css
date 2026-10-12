@@ -1,0 +1,100 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+/*
+ * Tema do Quiz Circular: branco + verde (sustentabilidade).
+ * As cores seguem o padrão de variáveis do shadcn/ui, então todos os
+ * componentes em components/ui herdam a paleta automaticamente.
+ * Para ajustar a identidade visual, basta mudar os valores abaixo.
+ */
+:root {
+  --radius: 0.75rem;
+
+  --background: oklch(1 0 0); /* branco */
+  --foreground: oklch(0.22 0.03 155); /* verde bem escuro, quase preto */
+
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.22 0.03 155);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.22 0.03 155);
+
+  --primary: oklch(0.55 0.15 152); /* verde principal (botões, destaques) */
+  --primary-foreground: oklch(0.99 0.01 150);
+
+  --secondary: oklch(0.96 0.03 150); /* verde bem claro (fundos suaves) */
+  --secondary-foreground: oklch(0.32 0.08 155);
+
+  --muted: oklch(0.97 0.01 150);
+  --muted-foreground: oklch(0.5 0.03 155);
+
+  --accent: oklch(0.94 0.05 150);
+  --accent-foreground: oklch(0.32 0.08 155);
+
+  --destructive: oklch(0.577 0.245 27.325);
+
+  --border: oklch(0.92 0.02 150);
+  --input: oklch(0.92 0.02 150);
+  --ring: oklch(0.55 0.15 152);
+}
+
+.dark {
+  --background: oklch(0.18 0.02 155);
+  --foreground: oklch(0.97 0.01 150);
+  --card: oklch(0.22 0.03 155);
+  --card-foreground: oklch(0.97 0.01 150);
+  --popover: oklch(0.22 0.03 155);
+  --popover-foreground: oklch(0.97 0.01 150);
+  --primary: oklch(0.7 0.16 152);
+  --primary-foreground: oklch(0.18 0.03 155);
+  --secondary: oklch(0.28 0.04 155);
+  --secondary-foreground: oklch(0.97 0.01 150);
+  --muted: oklch(0.28 0.04 155);
+  --muted-foreground: oklch(0.72 0.03 150);
+  --accent: oklch(0.3 0.05 155);
+  --accent-foreground: oklch(0.97 0.01 150);
+  --destructive: oklch(0.704 0.191 22.216);
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 15%);
+  --ring: oklch(0.7 0.16 152);
+}
+
+/* Expõe as variáveis acima como classes do Tailwind (bg-primary, text-muted-foreground etc.) */
+@theme inline {
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
