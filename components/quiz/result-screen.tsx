@@ -1,5 +1,8 @@
 "use client";
 
+import { useEffect, useState } from "react";
+import { animate, motion, useReducedMotion } from "motion/react";
+
 import { bomDesempenho } from "@/lib/quiz/pontuacao";
 
 // Situação da gravação da partida no Supabase.
@@ -14,6 +17,27 @@ type Props = {
   onJogarNovamente: () => void;
   onVerRanking: () => void;
 };
+
+// Número que "conta" de 0 até o valor final (contagem animada da pontuação).
+function NumeroAnimado({ valor }: { valor: number }) {
+  const reduzirMovimento = useReducedMotion();
+  const [exibido, setExibido] = useState(reduzirMovimento ? valor : 0);
+
+  useEffect(() => {
+    if (reduzirMovimento) {
+      setExibido(valor);
+      return;
+    }
+    const controle = animate(0, valor, {
+      duration: 1.2,
+      ease: "easeOut",
+      onUpdate: (v) => setExibido(Math.round(v)),
+    });
+    return () => controle.stop();
+  }, [valor, reduzirMovimento]);
+
+  return <>{exibido}</>;
+}
 
 // Tela de resultado ao fim da partida. Tem duas versões, escolhidas pela
 // fração de acertos (ver LIMITE_BOM_DESEMPENHO em lib/quiz/pontuacao.ts):
@@ -34,14 +58,17 @@ export function ResultScreen({
   return (
     <div className="flex w-full flex-col items-center gap-5 rounded-3xl border-[0.5px] border-[#dad7ce] bg-white p-6 text-center">
       {/* Ícone: troféu (bom) ou broto (a melhorar) */}
-      <div
+      <motion.div
+        initial={{ scale: 0.6, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        transition={{ type: "spring", stiffness: 260, damping: 16, delay: 0.1 }}
         className={`flex size-20 items-center justify-center rounded-full text-[36px] ${
           bom ? "bg-[#e1f5ee]" : "bg-[#f4f2ec]"
         }`}
         aria-hidden
       >
         {bom ? "🏆" : "🌱"}
-      </div>
+      </motion.div>
 
       {/* Mensagem */}
       <div className="flex flex-col gap-1">
@@ -62,7 +89,7 @@ export function ResultScreen({
           className="text-[44px] font-semibold leading-none text-[#196e56]"
           data-testid="pontuacao"
         >
-          {pontuacao}
+          <NumeroAnimado valor={pontuacao} />
         </span>
         <span className="text-[13px] text-[#196e56]">pontos</span>
       </div>
@@ -76,9 +103,12 @@ export function ResultScreen({
           </span>
         </div>
         <div className="h-[6px] w-full overflow-hidden rounded-[3px] bg-[#e1f5ee]">
-          <div
+          {/* Barra enche junto com a contagem da pontuação */}
+          <motion.div
             className="h-full rounded-[3px] bg-[#196e56]"
-            style={{ width: `${percentual}%` }}
+            initial={{ width: 0 }}
+            animate={{ width: `${percentual}%` }}
+            transition={{ duration: 1.2, ease: "easeOut" }}
           />
         </div>
       </div>

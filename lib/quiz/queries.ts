@@ -1,15 +1,18 @@
 // lib/quiz/queries.ts
-// Busca as perguntas do Supabase, com categoria e alternativas já embutidas.
-// Usa o cliente Supabase do navegador (lib/supabase/client.ts), então só
-// deve ser chamada em Client Components ("use client").
+// Busca as perguntas do Supabase (com categoria e alternativas embutidas) e
+// corrige respostas. Usa o cliente Supabase do navegador (lib/supabase/client.ts),
+// então só deve ser chamada em Client Components ("use client").
 
 import { createClient } from "@/lib/supabase/client";
-import type { Pergunta } from "./types";
+import type { CorrecaoResposta, Pergunta } from "./types";
 
 /**
  * Busca todas as perguntas com suas alternativas e categoria.
- * Embaralha a ordem das perguntas e, dentro de cada uma, mantém
- * A–E na ordem de inserção (E "Não sei" sempre por último — ver nota).
+ * Embaralha a ordem das PERGUNTAS; as alternativas vêm sempre na ordem fixa
+ * da coluna `ordem` (A–E, com "Não sei." por último).
+ *
+ * Não pede `correta` nem `feedback`: essas colunas são bloqueadas para o app
+ * (gabarito protegido) — a correção vem de `responder()`.
  */
 export async function getPerguntas(): Promise<Pergunta[]> {
   const supabase = createClient();
@@ -21,12 +24,12 @@ export async function getPerguntas(): Promise<Pergunta[]> {
       id,
       categoria_id,
       enunciado,
-      feedback,
       pontos,
       categorias ( id, nome ),
-      alternativas ( id, pergunta_id, texto, correta )
+      alternativas ( id, pergunta_id, texto, ordem )
     `
-    );
+    )
+    .order("ordem", { referencedTable: "alternativas", ascending: true });
 
   if (error) throw error;
 
@@ -37,15 +40,25 @@ export async function getPerguntas(): Promise<Pergunta[]> {
     [perguntas[i], perguntas[j]] = [perguntas[j], perguntas[i]];
   }
 
-  // Ordena as alternativas colocando "Não sei." sempre no fim (E)
-  for (const p of perguntas) {
-    p.alternativas.sort((a, b) => {
-      const aNaoSei = a.texto.trim().toLowerCase() === "não sei.";
-      const bNaoSei = b.texto.trim().toLowerCase() === "não sei.";
-      if (aNaoSei === bNaoSei) return 0;
-      return aNaoSei ? 1 : -1;
-    });
-  }
-
   return perguntas;
+}
+
+/**
+ * Corrige uma resposta no servidor (função `responder` do banco).
+ * Devolve se acertou, qual é a alternativa correta, o feedback e os pontos.
+ */
+export async function responder(
+  perguntaId: string,
+  alternativaId: string
+): Promise<CorrecaoResposta> {
+  const supabase = createClient();
+
+  const { data, error } = await supabase.rpc("responder", {
+    p_pergunta_id: perguntaId,
+    p_alternativa_id: alternativaId,
+  });
+  if (error) throw error;
+  if (!data?.[0]) throw new Error("O banco não devolveu a correção.");
+
+  return data[0];
 }

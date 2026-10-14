@@ -32,18 +32,21 @@ export type Database = {
         Row: {
           correta: boolean
           id: string
+          ordem: number
           pergunta_id: string
           texto: string
         }
         Insert: {
           correta?: boolean
           id?: string
+          ordem?: number
           pergunta_id: string
           texto: string
         }
         Update: {
           correta?: boolean
           id?: string
+          ordem?: number
           pergunta_id?: string
           texto?: string
         }
@@ -225,6 +228,15 @@ export type Database = {
           pontuacao: number
           posicao: number
           turma: string
+        }[]
+      }
+      responder: {
+        Args: { p_alternativa_id: string; p_pergunta_id: string }
+        Returns: {
+          acertou: boolean
+          alternativa_correta_id: string
+          feedback: string
+          pontos: number
         }[]
       }
       registrar_partida: {

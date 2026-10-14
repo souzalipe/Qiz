@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, type ReactNode } from "react";
+import { AnimatePresence, MotionConfig, motion } from "motion/react";
 
 import { PlayerForm } from "@/components/quiz/player-form";
 import { QuestionCard } from "@/components/quiz/question-card";
@@ -105,78 +106,118 @@ export function QuizFlow() {
     setTela("jogando");
   }
 
-  if (tela === "identificacao") {
-    return (
-      <PlayerForm
-        onIdentificado={(j) => {
-          setJogador(j);
-          setTela("jogando");
-        }}
-      />
-    );
-  }
+  // Decide qual tela mostrar. Cada tela tem uma "chave": quando a chave muda,
+  // a tela antiga sai e a nova entra com animação (ver o return no fim).
+  function telaAtual(): [string, ReactNode] {
+    if (tela === "identificacao") {
+      return [
+        "identificacao",
+        <PlayerForm
+          key="form"
+          onIdentificado={(j) => {
+            setJogador(j);
+            setTela("jogando");
+          }}
+        />,
+      ];
+    }
 
-  if (tela === "ranking" && partidaId) {
-    return (
-      <RankingScreen
-        partidaId={partidaId}
-        onJogarNovamente={jogarNovamente}
-        onVoltar={() => setTela("resultado")}
-      />
-    );
-  }
+    if (tela === "ranking" && partidaId) {
+      return [
+        "ranking",
+        <RankingScreen
+          key="ranking"
+          partidaId={partidaId}
+          onJogarNovamente={jogarNovamente}
+          onVoltar={() => setTela("resultado")}
+        />,
+      ];
+    }
 
-  if (erro) {
-    return (
-      <div className="flex flex-col items-center gap-3 text-center">
-        <p className="text-sm text-[#c0392b]">{erro}</p>
-        <button
-          type="button"
-          onClick={carregarPerguntas}
-          className="text-sm font-medium text-[#196e56] underline"
-        >
-          Tentar de novo
-        </button>
-      </div>
-    );
-  }
+    if (erro) {
+      return [
+        "erro",
+        <div key="erro" className="flex flex-col items-center gap-3 text-center">
+          <p className="text-sm text-[#c0392b]">{erro}</p>
+          <button
+            type="button"
+            onClick={carregarPerguntas}
+            className="text-sm font-medium text-[#196e56] underline"
+          >
+            Tentar de novo
+          </button>
+        </div>,
+      ];
+    }
 
-  if (perguntas === null) {
-    return (
-      <p className="text-center text-sm text-[#706f68]">Carregando perguntas…</p>
-    );
-  }
+    if (perguntas === null) {
+      return [
+        "carregando",
+        <p key="carregando" className="text-center text-sm text-[#706f68]">
+          Carregando perguntas…
+        </p>,
+      ];
+    }
 
-  if (perguntas.length === 0) {
-    return (
-      <p className="text-center text-sm text-[#706f68]">
-        Nenhuma pergunta cadastrada.
-      </p>
-    );
-  }
+    if (perguntas.length === 0) {
+      return [
+        "vazio",
+        <p key="vazio" className="text-center text-sm text-[#706f68]">
+          Nenhuma pergunta cadastrada.
+        </p>,
+      ];
+    }
 
-  if (tela === "resultado" && jogador) {
-    return (
-      <ResultScreen
-        pontuacao={pontuacao}
-        acertos={acertos}
+    if (tela === "resultado" && jogador) {
+      return [
+        "resultado",
+        <ResultScreen
+          key="resultado"
+          pontuacao={pontuacao}
+          acertos={acertos}
+          total={perguntas.length}
+          salvamento={salvamento}
+          onTentarSalvar={() => void salvarPartida(jogador.id, respostas)}
+          onJogarNovamente={jogarNovamente}
+          onVerRanking={() => setTela("ranking")}
+        />,
+      ];
+    }
+
+    const pergunta = perguntas[indice];
+    return [
+      // Chave por pergunta: cada nova pergunta "desliza" para dentro.
+      `pergunta-${pergunta.id}`,
+      <QuestionCard
+        key={pergunta.id}
+        pergunta={pergunta}
+        indice={indice}
         total={perguntas.length}
-        salvamento={salvamento}
-        onTentarSalvar={() => void salvarPartida(jogador.id, respostas)}
-        onJogarNovamente={jogarNovamente}
-        onVerRanking={() => setTela("ranking")}
-      />
-    );
+        onProxima={registrarResposta}
+      />,
+    ];
   }
+
+  const [chave, conteudo] = telaAtual();
+  const ehPergunta = chave.startsWith("pergunta-");
 
   return (
-    <QuestionCard
-      // key: garante um card "novo" (sem seleção anterior) a cada pergunta.
-      key={perguntas[indice].id}
-      pergunta={perguntas[indice]}
-      indice={indice}
-      total={perguntas.length}
-      onProxima={registrarResposta}
-    />
+    // reducedMotion="user": respeita quem pediu "reduzir movimento" no sistema.
+    <MotionConfig reducedMotion="user">
+      <AnimatePresence mode="wait" initial={false}>
+        <motion.div
+          key={chave}
+          className="w-full"
+          // Perguntas entram pela direita e saem pela esquerda; as demais
+          // telas só fazem fade com um leve deslocamento vertical.
+          initial={ehPergunta ? { opacity: 0, x: 40 } : { opacity: 0, y: 12 }}
+          animate={{ opacity: 1, x: 0, y: 0 }}
+          exit={ehPergunta ? { opacity: 0, x: -40 } : { opacity: 0, y: -12 }}
+          transition={{ duration: 0.25, ease: "easeOut" }}
+        >
+          {conteudo}
+        </motion.div>
+      </AnimatePresence>
+    </MotionConfig>
   );
 }

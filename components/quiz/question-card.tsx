@@ -2,7 +2,10 @@
 "use client";
 
 import { useState } from "react";
-import type { Pergunta } from "@/lib/quiz/types";
+import { AnimatePresence, motion } from "motion/react";
+
+import { responder } from "@/lib/quiz/queries";
+import type { CorrecaoResposta, Pergunta } from "@/lib/quiz/types";
 
 type Props = {
   pergunta: Pergunta;
@@ -14,26 +17,41 @@ type Props = {
 // Letras A, B, C, D, E
 const LETRAS = ["A", "B", "C", "D", "E"];
 
+const ehNaoSei = (texto: string) => texto.trim().toLowerCase() === "não sei.";
+
 export function QuestionCard({ pergunta, indice, total, onProxima }: Props) {
   const [selecionada, setSelecionada] = useState<string | null>(null);
-  const [respondida, setRespondida] = useState(false);
+  // Correção vinda do servidor (função `responder`). Enquanto for null, a
+  // pergunta não foi respondida — o navegador não sabe qual é a correta.
+  const [correcao, setCorrecao] = useState<CorrecaoResposta | null>(null);
+  const [verificando, setVerificando] = useState(false);
+  const [erro, setErro] = useState<string | null>(null);
 
+  const respondida = correcao !== null;
+  const progressoAnterior = (indice / total) * 100;
   const progresso = ((indice + 1) / total) * 100;
   const altSelecionada = pergunta.alternativas.find((a) => a.id === selecionada);
-  const acertou = !!altSelecionada?.correta;
 
-  function escolher(id: string) {
-    if (respondida) return;
+  async function escolher(id: string) {
+    if (respondida || verificando) return;
     setSelecionada(id);
-    setRespondida(true);
+    setVerificando(true);
+    setErro(null);
+    try {
+      setCorrecao(await responder(pergunta.id, id));
+    } catch (e) {
+      console.error(e);
+      // Libera para escolher de novo.
+      setSelecionada(null);
+      setErro("Não foi possível verificar sua resposta. Tente de novo.");
+    } finally {
+      setVerificando(false);
+    }
   }
 
   function proxima() {
-    if (!selecionada) return;
-    onProxima(acertou, selecionada);
-    // reset para a próxima pergunta
-    setSelecionada(null);
-    setRespondida(false);
+    if (!selecionada || !correcao) return;
+    onProxima(correcao.acertou, selecionada);
   }
 
   return (
@@ -46,11 +64,13 @@ export function QuestionCard({ pergunta, indice, total, onProxima }: Props) {
         </span>
       </div>
 
-      {/* Barra de progresso */}
+      {/* Barra de progresso: anima do ponto da pergunta anterior até o atual */}
       <div className="h-[6px] w-full overflow-hidden rounded-[3px] bg-[#e1f5ee]">
-        <div
-          className="h-full rounded-[3px] bg-[#196e56] transition-all"
-          style={{ width: `${progresso}%` }}
+        <motion.div
+          className="h-full rounded-[3px] bg-[#196e56]"
+          initial={{ width: `${progressoAnterior}%` }}
+          animate={{ width: `${progresso}%` }}
+          transition={{ duration: 0.5, ease: "easeOut" }}
         />
       </div>
 
@@ -67,66 +87,88 @@ export function QuestionCard({ pergunta, indice, total, onProxima }: Props) {
       {/* Alternativas */}
       <div className="flex flex-col gap-[10px]">
         {pergunta.alternativas.map((alt, i) => {
-          const naoSei = alt.texto.trim().toLowerCase() === "não sei.";
+          const naoSei = ehNaoSei(alt.texto);
           const estaSelecionada = selecionada === alt.id;
+          const eCorreta = correcao?.alternativa_correta_id === alt.id;
+          const errouEsta = respondida && estaSelecionada && !eCorreta;
 
           // Estados visuais
-          let classe =
-            "border-[0.5px] border-[#dad7ce] text-[#706f68]";
-          let mostrarCheck = false;
-          let mostrarErro = false;
-
-          if (respondida) {
-            if (alt.correta) {
-              // a correta sempre fica verde ao revelar
-              classe = "border-[1.5px] border-[#5dc9a5] bg-[#e1f5ee] text-[#196e56]";
-              mostrarCheck = true;
-            } else if (estaSelecionada) {
-              // escolha errada do usuário fica vermelha (vermelho = erro)
-              classe = "border-[1.5px] border-[#e2a0a0] bg-[#fdeaea] text-[#c0392b]";
-              mostrarErro = true;
-            }
+          let classe = "border-[0.5px] border-[#dad7ce] text-[#706f68]";
+          if (respondida && eCorreta) {
+            // a correta sempre fica verde ao revelar
+            classe = "border-[1.5px] border-[#5dc9a5] bg-[#e1f5ee] text-[#196e56]";
+          } else if (errouEsta) {
+            // escolha errada do usuário fica vermelha (vermelho = erro)
+            classe = "border-[1.5px] border-[#e2a0a0] bg-[#fdeaea] text-[#c0392b]";
+          } else if (verificando && estaSelecionada) {
+            // aguardando a correção do servidor
+            classe = "border-[1.5px] border-[#5dc9a5] text-[#196e56]";
           }
 
           return (
-            <button
+            <motion.button
               key={alt.id}
               type="button"
               onClick={() => escolher(alt.id)}
-              disabled={respondida}
+              disabled={respondida || verificando}
+              // Revelação: a correta "pulsa" e a errada "balança".
+              animate={
+                respondida && eCorreta
+                  ? { scale: [1, 1.03, 1] }
+                  : errouEsta
+                    ? { x: [0, -6, 6, -3, 3, 0] }
+                    : { scale: 1, x: 0 }
+              }
+              transition={{ duration: 0.4 }}
               className={`flex w-full items-center gap-[10px] rounded-[10px] p-3 text-left transition-colors ${classe} ${
-                naoSei && !respondida ? "text-[#9e9d94]" : ""
-              } ${!respondida ? "hover:border-[#5dc9a5]" : ""}`}
+                naoSei && !respondida && !estaSelecionada ? "text-[#9e9d94]" : ""
+              } ${!respondida && !verificando ? "hover:border-[#5dc9a5]" : ""} ${
+                verificando && estaSelecionada ? "animate-pulse" : ""
+              }`}
             >
               <span className="shrink-0 text-[14px] font-medium">
                 {LETRAS[i]}
               </span>
               <span className="flex-1 text-[14px]">{alt.texto}</span>
-              {mostrarCheck && (
+              {respondida && eCorreta && (
                 <span className="shrink-0 text-[16px] font-medium">✓</span>
               )}
-              {mostrarErro && (
+              {errouEsta && (
                 <span className="shrink-0 text-[16px] font-medium">×</span>
               )}
-            </button>
+            </motion.button>
           );
         })}
       </div>
 
-      {/* Feedback (só após responder) */}
-      {respondida && (
-        <div className="flex flex-col gap-1 rounded-[10px] bg-[#e1f5ee] px-[14px] py-3 text-[13px] text-[#196e56]">
-          <p className="font-medium">
-            {acertou
-              ? `Resposta correta  ·  +${pergunta.pontos}`
-              : altSelecionada && !altSelecionada.correta &&
-                altSelecionada.texto.trim().toLowerCase() === "não sei."
-              ? "Tudo bem não saber  ·  +0"
-              : "Resposta incorreta  ·  +0"}
-          </p>
-          <p className="font-normal">{pergunta.feedback}</p>
-        </div>
-      )}
+      {erro && <p className="text-[13px] text-[#c0392b]">{erro}</p>}
+
+      {/* Feedback (só após a correção do servidor) — entra deslizando */}
+      <AnimatePresence initial={false}>
+        {correcao && (
+          <motion.div
+            key="feedback"
+            initial={{ opacity: 0, height: 0, y: 8 }}
+            animate={{ opacity: 1, height: "auto", y: 0 }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.3, ease: "easeOut" }}
+            className="overflow-hidden"
+          >
+            <div className="flex flex-col gap-1 rounded-[10px] bg-[#e1f5ee] px-[14px] py-3 text-[13px] text-[#196e56]">
+              <p className="font-medium">
+                {correcao.acertou
+                  ? `Resposta correta  ·  +${correcao.pontos}`
+                  : altSelecionada && ehNaoSei(altSelecionada.texto)
+                    ? "Tudo bem não saber  ·  +0"
+                    : "Resposta incorreta  ·  +0"}
+              </p>
+              {correcao.feedback && (
+                <p className="font-normal">{correcao.feedback}</p>
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Botão Próxima */}
       <button

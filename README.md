@@ -74,6 +74,20 @@ versionados e aplicados em ordem (o prefixo é a data/hora):
 | `20261012120000_criar_tabelas_quiz.sql` | Cria as 6 tabelas, chaves estrangeiras e índices |
 | `20261012120100_rls_politicas_iniciais.sql` | Ativa o RLS e cria as políticas iniciais |
 | `20261014120000_registro_partida_e_ranking.sql` | Funções `registrar_partida` (grava partida + respostas, calculando a pontuação pelo gabarito) e `ranking` |
+| `20261016120000_ordem_alternativas.sql` | Coluna `alternativas.ordem` (A–E fixos, "Não sei." por último) |
+| `20261016120100_funcao_responder.sql` | Função `responder`: corrige cada resposta no servidor |
+| `20261016120200_gabarito_protegido.sql` | Bloqueia `correta`/`feedback` para o app e fecha inserts diretos em `partidas`/`respostas` |
+
+### Seed (perguntas do quiz)
+
+O conteúdo do quiz (categorias, perguntas e alternativas) fica em
+`supabase/seed.sql`. Ele roda automaticamente depois das migrations no
+`npx supabase db reset` (banco local). No projeto na nuvem, o seed **não** roda
+com `db push` — aplique uma vez pelo SQL Editor do painel.
+
+As alternativas não precisam informar `ordem`: um trigger numera na ordem do
+INSERT (a primeira inserida de cada pergunta é a A). Mantenha "Não sei." como a
+última de cada pergunta.
 
 As duas migrations já estão aplicadas no projeto Supabase do quiz
 (ref `yuonmgkzbzvytxdvhytr`, organização "Felipe Projects").
