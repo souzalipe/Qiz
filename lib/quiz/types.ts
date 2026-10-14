@@ -22,3 +22,12 @@ export interface Pergunta {
   categorias: Categoria;        // join
   alternativas: Alternativa[];  // join
 }
+
+// Resposta dada pelo jogador numa pergunta, guardada durante a partida.
+// Tem exatamente os campos da tabela `respostas` (exceto partida_id, que só
+// existe depois que a partida é gravada — Parte B da Fase 4).
+export interface RespostaDada {
+  pergunta_id: string;
+  alternativa_id: string;
+  correta: boolean;
+}
