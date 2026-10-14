@@ -2,20 +2,32 @@
 
 import { useCallback, useEffect, useState } from "react";
 
+import { PlayerForm } from "@/components/quiz/player-form";
 import { QuestionCard } from "@/components/quiz/question-card";
-import { ResultScreen } from "@/components/quiz/result-screen";
+import { RankingScreen } from "@/components/quiz/ranking-screen";
+import { ResultScreen, type StatusSalvamento } from "@/components/quiz/result-screen";
+import { registrarPartida, type Jogador } from "@/lib/quiz/partidas";
 import { PONTOS_POR_ACERTO } from "@/lib/quiz/pontuacao";
 import { getPerguntas } from "@/lib/quiz/queries";
 import type { Pergunta, RespostaDada } from "@/lib/quiz/types";
 
-// Controlador do quiz: carrega as perguntas, guarda em qual pergunta o
-// jogador está, acumula pontuação/acertos/respostas e, ao fim, mostra o
-// resultado.
+// Controlador do quiz.
 //
-// Fluxo:  carregando → jogando (pergunta 1…N) → resultado
-//                                    ↑                 │
-//                                    └─ jogar de novo ─┘
+// Fluxo:  identificação → jogando (pergunta 1…N) → resultado ⇄ ranking
+//                              ↑                           │
+//                              └────── jogar de novo ──────┘
+//
+// - Identificação: nome e turma → grava em `usuarios` (uma vez por visita;
+//   "jogar de novo" mantém o mesmo jogador).
+// - Jogando: acumula pontuação, acertos e as respostas dadas.
+// - Resultado: grava a partida e as respostas (função registrar_partida).
+// - Ranking: melhores pontuações, com a partida atual destacada.
+type Tela = "identificacao" | "jogando" | "resultado" | "ranking";
+
 export function QuizFlow() {
+  const [tela, setTela] = useState<Tela>("identificacao");
+  const [jogador, setJogador] = useState<Jogador | null>(null);
+
   const [perguntas, setPerguntas] = useState<Pergunta[] | null>(null);
   const [erro, setErro] = useState<string | null>(null);
 
@@ -23,19 +35,20 @@ export function QuizFlow() {
   const [pontuacao, setPontuacao] = useState(0);
   const [acertos, setAcertos] = useState(0);
   // Uma entrada por pergunta respondida, na ordem em que foram respondidas.
-  // Será gravada na tabela `respostas` na Parte B.
   const [respostas, setRespostas] = useState<RespostaDada[]>([]);
-  const [terminou, setTerminou] = useState(false);
+
+  const [salvamento, setSalvamento] = useState<StatusSalvamento>("salvando");
+  const [partidaId, setPartidaId] = useState<string | null>(null);
 
   // Busca (e embaralha) as perguntas e zera a partida.
-  const iniciar = useCallback(() => {
+  const carregarPerguntas = useCallback(() => {
     setPerguntas(null);
     setErro(null);
     setIndice(0);
     setPontuacao(0);
     setAcertos(0);
     setRespostas([]);
-    setTerminou(false);
+    setPartidaId(null);
 
     getPerguntas()
       .then(setPerguntas)
@@ -45,39 +58,72 @@ export function QuizFlow() {
       });
   }, []);
 
+  // Já carrega as perguntas enquanto o jogador preenche nome e turma.
   useEffect(() => {
-    iniciar();
-  }, [iniciar]);
+    carregarPerguntas();
+  }, [carregarPerguntas]);
+
+  // Grava a partida no Supabase. Chamado ao terminar (e no "tentar de novo").
+  async function salvarPartida(jogadorId: string, lista: RespostaDada[]) {
+    setSalvamento("salvando");
+    try {
+      const partida = await registrarPartida(jogadorId, lista);
+      setPartidaId(partida.partida_id);
+      setSalvamento("salvo");
+    } catch (e) {
+      console.error(e);
+      setSalvamento("erro");
+    }
+  }
 
   // Chamado pelo QuestionCard quando o jogador clica em "Próxima".
   function registrarResposta(acertou: boolean, alternativaId: string) {
-    if (!perguntas) return;
+    if (!perguntas || !jogador) return;
     const pergunta = perguntas[indice];
 
     const novasRespostas = [
       ...respostas,
       { pergunta_id: pergunta.id, alternativa_id: alternativaId, correta: acertou },
     ];
-    const novaPontuacao = pontuacao + (acertou ? PONTOS_POR_ACERTO : 0);
-    const novosAcertos = acertos + (acertou ? 1 : 0);
-
     setRespostas(novasRespostas);
-    setPontuacao(novaPontuacao);
-    setAcertos(novosAcertos);
+    if (acertou) {
+      setPontuacao((p) => p + PONTOS_POR_ACERTO);
+      setAcertos((a) => a + 1);
+    }
 
-    // Última pergunta → resultado; senão, avança.
+    // Última pergunta → resultado (e grava); senão, avança.
     if (indice + 1 >= perguntas.length) {
-      // Temporário (até a Parte B gravar no Supabase): mostra no console do
-      // navegador exatamente o que será salvo em `partidas` e `respostas`.
-      console.info("Partida concluída", {
-        pontuacao: novaPontuacao,
-        acertos: novosAcertos,
-        respostas: novasRespostas,
-      });
-      setTerminou(true);
+      setTela("resultado");
+      void salvarPartida(jogador.id, novasRespostas);
     } else {
       setIndice(indice + 1);
     }
+  }
+
+  function jogarNovamente() {
+    carregarPerguntas();
+    setTela("jogando");
+  }
+
+  if (tela === "identificacao") {
+    return (
+      <PlayerForm
+        onIdentificado={(j) => {
+          setJogador(j);
+          setTela("jogando");
+        }}
+      />
+    );
+  }
+
+  if (tela === "ranking" && partidaId) {
+    return (
+      <RankingScreen
+        partidaId={partidaId}
+        onJogarNovamente={jogarNovamente}
+        onVoltar={() => setTela("resultado")}
+      />
+    );
   }
 
   if (erro) {
@@ -86,7 +132,7 @@ export function QuizFlow() {
         <p className="text-sm text-[#c0392b]">{erro}</p>
         <button
           type="button"
-          onClick={iniciar}
+          onClick={carregarPerguntas}
           className="text-sm font-medium text-[#196e56] underline"
         >
           Tentar de novo
@@ -109,13 +155,16 @@ export function QuizFlow() {
     );
   }
 
-  if (terminou) {
+  if (tela === "resultado" && jogador) {
     return (
       <ResultScreen
         pontuacao={pontuacao}
         acertos={acertos}
         total={perguntas.length}
-        onJogarNovamente={iniciar}
+        salvamento={salvamento}
+        onTentarSalvar={() => void salvarPartida(jogador.id, respostas)}
+        onJogarNovamente={jogarNovamente}
+        onVerRanking={() => setTela("ranking")}
       />
     );
   }

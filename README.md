@@ -73,6 +73,7 @@ versionados e aplicados em ordem (o prefixo é a data/hora):
 | ------- | --------- |
 | `20261012120000_criar_tabelas_quiz.sql` | Cria as 6 tabelas, chaves estrangeiras e índices |
 | `20261012120100_rls_politicas_iniciais.sql` | Ativa o RLS e cria as políticas iniciais |
+| `20261014120000_registro_partida_e_ranking.sql` | Funções `registrar_partida` (grava partida + respostas, calculando a pontuação pelo gabarito) e `ranking` |
 
 As duas migrations já estão aplicadas no projeto Supabase do quiz
 (ref `yuonmgkzbzvytxdvhytr`, organização "Felipe Projects").

@@ -2,13 +2,17 @@
 
 import { bomDesempenho } from "@/lib/quiz/pontuacao";
 
+// Situação da gravação da partida no Supabase.
+export type StatusSalvamento = "salvando" | "salvo" | "erro";
+
 type Props = {
   pontuacao: number;
   acertos: number;
   total: number;
+  salvamento: StatusSalvamento;
+  onTentarSalvar: () => void;
   onJogarNovamente: () => void;
-  // Opcional por enquanto: o ranking entra na Parte B da Fase 4.
-  onVerRanking?: () => void;
+  onVerRanking: () => void;
 };
 
 // Tela de resultado ao fim da partida. Tem duas versões, escolhidas pela
@@ -19,6 +23,8 @@ export function ResultScreen({
   pontuacao,
   acertos,
   total,
+  salvamento,
+  onTentarSalvar,
   onJogarNovamente,
   onVerRanking,
 }: Props) {
@@ -77,15 +83,29 @@ export function ResultScreen({
         </div>
       </div>
 
+      {/* Situação da gravação (só aparece enquanto salva ou se falhar) */}
+      {salvamento === "salvando" && (
+        <p className="text-[13px] text-[#706f68]">Salvando sua partida…</p>
+      )}
+      {salvamento === "erro" && (
+        <p className="text-[13px] text-[#c0392b]">
+          Não foi possível salvar sua partida.{" "}
+          <button type="button" onClick={onTentarSalvar} className="font-medium underline">
+            Tentar de novo
+          </button>
+        </p>
+      )}
+
       {/* Ações */}
       <div className="flex w-full flex-col gap-[10px]">
         <button
           type="button"
           onClick={onVerRanking}
-          disabled={!onVerRanking}
+          // O ranking destaca a partida do jogador, então só abre depois de salva.
+          disabled={salvamento !== "salvo"}
           className="flex w-full items-center justify-center rounded-xl bg-[#196e56] py-[13px] text-[15px] font-medium text-white transition-opacity disabled:opacity-40"
         >
-          {onVerRanking ? "Ver ranking" : "Ver ranking (em breve)"}
+          Ver ranking
         </button>
         <button
           type="button"

@@ -215,7 +215,26 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      ranking: {
+        Args: { p_limite?: number; p_partida_id?: string }
+        Returns: {
+          acertos: number
+          criado_em: string
+          nome: string
+          partida_id: string
+          pontuacao: number
+          posicao: number
+          turma: string
+        }[]
+      }
+      registrar_partida: {
+        Args: { p_respostas: Json; p_usuario_id: string }
+        Returns: {
+          acertos: number
+          partida_id: string
+          pontuacao: number
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never
