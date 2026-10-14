@@ -3,6 +3,7 @@
 // Components.
 
 import { createClient } from "@/lib/supabase/client";
+import { gerarUuid } from "@/lib/uuid";
 import type { RespostaDada } from "./types";
 
 export interface Jogador {
@@ -28,12 +29,12 @@ export interface LinhaRanking {
 
 /**
  * Cadastra o participante na tabela `usuarios`.
- * O id é gerado aqui no navegador porque o RLS só permite INSERT (o app não
+ * O id é gerado aqui no navegador (ver lib/uuid.ts) porque o RLS só permite INSERT (o app não
  * pode ler a tabela de volta para descobrir o id gerado pelo banco).
  */
 export async function criarJogador(nome: string, turma: string): Promise<Jogador> {
   const supabase = createClient();
-  const jogador = { id: crypto.randomUUID(), nome: nome.trim(), turma: turma.trim() };
+  const jogador = { id: gerarUuid(), nome: nome.trim(), turma: turma.trim() };
 
   const { error } = await supabase.from("usuarios").insert(jogador);
   if (error) throw error;
