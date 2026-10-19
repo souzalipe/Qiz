@@ -218,6 +218,16 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      classificacao: {
+        Args: { p_limite?: number; p_partida_id?: string; p_turma?: string }
+        Returns: {
+          nome: string
+          partida_id: string
+          pontuacao: number
+          posicao: number
+          total: number
+        }[]
+      }
       ranking: {
         Args: { p_limite?: number; p_partida_id?: string }
         Returns: {

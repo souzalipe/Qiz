@@ -5,14 +5,17 @@ import { useState, type FormEvent } from "react";
 import { criarJogador, type Jogador } from "@/lib/quiz/partidas";
 
 type Props = {
+  // Jogador atual (ao voltar pelo "Início"): já vem preenchido e, se nome e
+  // turma não mudarem, é reaproveitado sem novo cadastro.
+  inicial?: Jogador | null;
   onIdentificado: (jogador: Jogador) => void;
 };
 
 // Tela inicial: pede nome e turma e cadastra o participante em `usuarios`
 // antes de começar o quiz.
-export function PlayerForm({ onIdentificado }: Props) {
-  const [nome, setNome] = useState("");
-  const [turma, setTurma] = useState("");
+export function PlayerForm({ inicial, onIdentificado }: Props) {
+  const [nome, setNome] = useState(inicial?.nome ?? "");
+  const [turma, setTurma] = useState(inicial?.turma ?? "");
   const [salvando, setSalvando] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
 
@@ -21,6 +24,12 @@ export function PlayerForm({ onIdentificado }: Props) {
   async function enviar(e: FormEvent) {
     e.preventDefault();
     if (!valido || salvando) return;
+
+    // Mesmo participante de antes: não cadastra de novo.
+    if (inicial && nome.trim() === inicial.nome && turma.trim() === inicial.turma) {
+      onIdentificado(inicial);
+      return;
+    }
 
     setSalvando(true);
     setErro(null);

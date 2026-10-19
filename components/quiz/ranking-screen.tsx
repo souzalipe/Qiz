@@ -1,109 +1,130 @@
+// components/quiz/ranking-screen.tsx
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
-import { getRanking, type LinhaRanking } from "@/lib/quiz/partidas";
+export type RankingEntry = {
+  posicao: number;
+  iniciais: string;   // ex.: "AS"
+  nome: string;       // "Você" na linha do jogador atual
+  pontos: number;
+  voce?: boolean;     // true destaca a linha do jogador
+};
 
 type Props = {
-  // Partida do jogador atual, destacada na lista.
-  partidaId: string;
-  onJogarNovamente: () => void;
+  geral: RankingEntry[];
+  turma?: RankingEntry[];
+  minhaPosicao: number;
+  totalParticipantes: number;
+  // Opcional: posição/total dentro da turma, mostrados na aba "Minha turma".
+  minhaPosicaoTurma?: number;
+  totalTurma?: number;
   onVoltar: () => void;
 };
 
-const TOP = 10;
-
-// Ranking (frame 05): melhores pontuações + destaque da partida atual.
-// Se a partida atual estiver fora do top, ela aparece no fim, separada.
-export function RankingScreen({ partidaId, onJogarNovamente, onVoltar }: Props) {
-  const [linhas, setLinhas] = useState<LinhaRanking[] | null>(null);
-  const [erro, setErro] = useState(false);
-
-  useEffect(() => {
-    getRanking(partidaId, TOP)
-      .then(setLinhas)
-      .catch((e: unknown) => {
-        console.error(e);
-        setErro(true);
-      });
-  }, [partidaId]);
+export function RankingScreen({
+  geral,
+  turma,
+  minhaPosicao,
+  totalParticipantes,
+  minhaPosicaoTurma,
+  totalTurma,
+  onVoltar,
+}: Props) {
+  const [aba, setAba] = useState<"geral" | "turma">("geral");
+  const lista = aba === "turma" && turma ? turma : geral;
+  const naTurma = aba === "turma" && minhaPosicaoTurma && totalTurma;
+  const posicao = naTurma ? minhaPosicaoTurma : minhaPosicao;
+  const total = naTurma ? totalTurma : totalParticipantes;
 
   return (
-    <div className="flex w-full flex-col gap-4 rounded-3xl border-[0.5px] border-[#dad7ce] bg-white p-5">
-      <div className="flex flex-col gap-1 text-center">
-        <span className="text-[32px]" aria-hidden>
-          🏅
-        </span>
-        <h2 className="text-[22px] font-medium text-[#1b1b19]">Ranking</h2>
-        <p className="text-[13px] text-[#706f68]">Melhores pontuações</p>
+    <div className="flex w-full flex-col gap-4 rounded-3xl border-[0.5px] border-[#dad7ce] bg-white px-5 py-[22px]">
+      {/* Cabeçalho */}
+      <div className="flex items-center gap-[10px]">
+        <button type="button" onClick={onVoltar} aria-label="Voltar" className="text-[22px] text-[#706f68]">
+          ‹
+        </button>
+        <span className="text-[18px] font-medium text-[#1b1b19]">Ranking</span>
       </div>
 
-      {erro ? (
-        <p className="text-center text-[13px] text-[#c0392b]">
-          Não foi possível carregar o ranking.
-        </p>
-      ) : linhas === null ? (
-        <p className="text-center text-[13px] text-[#706f68]">Carregando…</p>
-      ) : (
-        <ol className="flex flex-col gap-[6px]">
-          {linhas.map((l, i) => {
-            const minha = l.partida_id === partidaId;
-            // Linha "…" quando a partida atual está fora do top.
-            const salto = i > 0 && l.posicao > linhas[i - 1].posicao + 1;
-            return (
-              <li key={l.partida_id} className="flex flex-col gap-[6px]">
-                {salto && (
-                  <span className="text-center text-[13px] text-[#9e9d94]">…</span>
-                )}
-                <div
-                  data-minha={minha || undefined}
-                  className={`flex items-center gap-3 rounded-[10px] px-3 py-[10px] ${
-                    minha
-                      ? "border-[1.5px] border-[#5dc9a5] bg-[#e1f5ee]"
-                      : "border-[0.5px] border-[#dad7ce]"
-                  }`}
-                >
-                  <span
-                    className={`w-6 shrink-0 text-center text-[14px] font-semibold ${
-                      l.posicao <= 3 ? "text-[#196e56]" : "text-[#9e9d94]"
-                    }`}
-                  >
-                    {l.posicao}º
-                  </span>
-                  <div className="flex min-w-0 flex-1 flex-col">
-                    <span className="truncate text-[14px] font-medium text-[#1b1b19]">
-                      {l.nome}
-                      {minha && <span className="text-[#196e56]"> · você</span>}
-                    </span>
-                    {l.turma && (
-                      <span className="truncate text-[12px] text-[#706f68]">{l.turma}</span>
-                    )}
-                  </div>
-                  <span className="shrink-0 text-[14px] font-semibold text-[#196e56]">
-                    {l.pontuacao} pts
-                  </span>
-                </div>
-              </li>
-            );
-          })}
-        </ol>
-      )}
+      {/* Abas */}
+      <div className="flex w-full gap-2">
+        <button
+          type="button"
+          onClick={() => setAba("geral")}
+          className={`flex-1 rounded-full py-[7px] text-[13px] font-medium ${
+            aba === "geral"
+              ? "bg-[#196e56] text-white"
+              : "border-[0.5px] border-[#dad7ce] text-[#706f68]"
+          }`}
+        >
+          Geral
+        </button>
+        <button
+          type="button"
+          onClick={() => setAba("turma")}
+          className={`flex-1 rounded-full py-[7px] text-[13px] font-medium ${
+            aba === "turma"
+              ? "bg-[#196e56] text-white"
+              : "border-[0.5px] border-[#dad7ce] text-[#706f68]"
+          }`}
+        >
+          Minha turma
+        </button>
+      </div>
 
-      <div className="flex w-full flex-col gap-[10px]">
-        <button
-          type="button"
-          onClick={onJogarNovamente}
-          className="flex w-full items-center justify-center rounded-xl bg-[#196e56] py-[13px] text-[15px] font-medium text-white"
-        >
-          Jogar de novo
-        </button>
-        <button
-          type="button"
-          onClick={onVoltar}
-          className="flex w-full items-center justify-center rounded-xl border-[0.5px] border-[#dad7ce] py-[13px] text-[15px] font-medium text-[#196e56] transition-colors hover:border-[#5dc9a5]"
-        >
-          Voltar ao resultado
-        </button>
+      {/* Posição do jogador */}
+      <p className="text-[12px] text-[#706f68]">
+        Você está em {posicao}º de {total} participantes
+      </p>
+
+      {/* Lista */}
+      <div className="flex w-full flex-col gap-[2px]">
+        {lista.map((e) => (
+          <div
+            key={`${e.posicao}-${e.nome}`}
+            className={`flex items-center gap-3 px-2 py-[10px] ${
+              e.voce
+                ? "rounded-[10px] border border-[#5dc9a5] bg-[#e1f5ee]"
+                : ""
+            }`}
+          >
+            <span
+              className={`w-[18px] text-center text-[14px] font-medium ${
+                e.voce ? "text-[#196e56]" : "text-[#706f68]"
+              }`}
+            >
+              {e.posicao}
+            </span>
+            <div
+              className={`flex size-[34px] items-center justify-center rounded-[17px] ${
+                e.voce ? "bg-[#196e56]" : "bg-[#f4f2ec]"
+              }`}
+            >
+              <span
+                className={`text-[12px] font-medium ${
+                  e.voce ? "text-white" : "text-[#706f68]"
+                }`}
+              >
+                {e.iniciais}
+              </span>
+            </div>
+            <span
+              className={`flex-1 text-[14px] ${
+                e.voce ? "font-medium text-[#196e56]" : "text-[#1b1b19]"
+              }`}
+            >
+              {e.nome}
+            </span>
+            <span
+              className={`text-[14px] font-medium ${
+                e.voce ? "text-[#196e56]" : "text-[#1b1b19]"
+              }`}
+            >
+              {e.pontos}
+            </span>
+          </div>
+        ))}
       </div>
     </div>
   );

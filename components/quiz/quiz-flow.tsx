@@ -5,8 +5,8 @@ import { AnimatePresence, MotionConfig, motion } from "motion/react";
 
 import { PlayerForm } from "@/components/quiz/player-form";
 import { QuestionCard } from "@/components/quiz/question-card";
-import { RankingScreen } from "@/components/quiz/ranking-screen";
-import { ResultScreen, type StatusSalvamento } from "@/components/quiz/result-screen";
+import { RankingContainer } from "@/components/quiz/ranking-container";
+import { ResultCard } from "@/components/quiz/result-card";
 import { registrarPartida, type Jogador } from "@/lib/quiz/partidas";
 import { PONTOS_POR_ACERTO } from "@/lib/quiz/pontuacao";
 import { getPerguntas } from "@/lib/quiz/queries";
@@ -22,8 +22,15 @@ import type { Pergunta, RespostaDada } from "@/lib/quiz/types";
 //   "jogar de novo" mantém o mesmo jogador).
 // - Jogando: acumula pontuação, acertos e as respostas dadas.
 // - Resultado: grava a partida e as respostas (função registrar_partida).
-// - Ranking: melhores pontuações, com a partida atual destacada.
+// - Ranking: melhores pontuações (geral e da turma), com a partida atual
+//   destacada.
+//
+// "Início" (resultado baixo) volta à identificação já preenchida: se o
+// jogador não mudar nome/turma, continua sendo o mesmo participante.
 type Tela = "identificacao" | "jogando" | "resultado" | "ranking";
+
+// Situação da gravação da partida no Supabase.
+type StatusSalvamento = "salvando" | "salvo" | "erro";
 
 export function QuizFlow() {
   const [tela, setTela] = useState<Tela>("identificacao");
@@ -114,21 +121,26 @@ export function QuizFlow() {
         "identificacao",
         <PlayerForm
           key="form"
+          inicial={jogador}
           onIdentificado={(j) => {
             setJogador(j);
+            // Vindo do "Início" depois de uma partida: sorteia perguntas novas.
+            if (respostas.length > 0) carregarPerguntas();
             setTela("jogando");
           }}
         />,
       ];
     }
 
-    if (tela === "ranking" && partidaId) {
+    if (tela === "ranking" && jogador) {
       return [
         "ranking",
-        <RankingScreen
+        <RankingContainer
           key="ranking"
           partidaId={partidaId}
-          onJogarNovamente={jogarNovamente}
+          salvamento={salvamento}
+          turma={jogador.turma}
+          onTentarSalvar={() => void salvarPartida(jogador.id, respostas)}
           onVoltar={() => setTela("resultado")}
         />,
       ];
@@ -171,16 +183,32 @@ export function QuizFlow() {
     if (tela === "resultado" && jogador) {
       return [
         "resultado",
-        <ResultScreen
-          key="resultado"
-          pontuacao={pontuacao}
-          acertos={acertos}
-          total={perguntas.length}
-          salvamento={salvamento}
-          onTentarSalvar={() => void salvarPartida(jogador.id, respostas)}
-          onJogarNovamente={jogarNovamente}
-          onVerRanking={() => setTela("ranking")}
-        />,
+        <div key="resultado" className="flex w-full flex-col gap-3">
+          <ResultCard
+            pontuacao={pontuacao}
+            acertos={acertos}
+            total={perguntas.length}
+            onJogarNovo={jogarNovamente}
+            onVerRanking={() => setTela("ranking")}
+            onInicio={() => setTela("identificacao")}
+          />
+          {/* Situação da gravação (só aparece enquanto salva ou se falhar) */}
+          {salvamento === "salvando" && (
+            <p className="text-center text-[13px] text-[#706f68]">Salvando sua partida…</p>
+          )}
+          {salvamento === "erro" && (
+            <p className="text-center text-[13px] text-[#c0392b]">
+              Não foi possível salvar sua partida.{" "}
+              <button
+                type="button"
+                onClick={() => void salvarPartida(jogador.id, respostas)}
+                className="font-medium underline"
+              >
+                Tentar de novo
+              </button>
+            </p>
+          )}
+        </div>,
       ];
     }
 
