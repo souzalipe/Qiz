@@ -55,9 +55,9 @@ export function QuestionCard({ pergunta, indice, total, onProxima }: Props) {
   }
 
   return (
-    <div className="flex w-full flex-col gap-4 rounded-3xl border-[0.5px] border-[#dad7ce] bg-white p-5">
+    <div className="flex w-full flex-col gap-4 rounded-3xl border-[0.5px] border-[var(--quiz-border)] bg-[var(--quiz-surface)] p-5">
       {/* Topo */}
-      <div className="flex items-center justify-between text-[#706f68]">
+      <div className="flex items-center justify-between text-[var(--quiz-text-muted)]">
         <span className="text-[20px] leading-none">×</span>
         <span className="text-[13px]">
           Pergunta {indice + 1} de {total}
@@ -65,9 +65,9 @@ export function QuestionCard({ pergunta, indice, total, onProxima }: Props) {
       </div>
 
       {/* Barra de progresso: anima do ponto da pergunta anterior até o atual */}
-      <div className="h-[6px] w-full overflow-hidden rounded-[3px] bg-[#e1f5ee]">
+      <div className="h-[6px] w-full overflow-hidden rounded-[3px] bg-[var(--quiz-green-tint)]">
         <motion.div
-          className="h-full rounded-[3px] bg-[#196e56]"
+          className="h-full rounded-[3px] bg-[var(--quiz-green)]"
           initial={{ width: `${progressoAnterior}%` }}
           animate={{ width: `${progresso}%` }}
           transition={{ duration: 0.5, ease: "easeOut" }}
@@ -75,12 +75,12 @@ export function QuestionCard({ pergunta, indice, total, onProxima }: Props) {
       </div>
 
       {/* Categoria */}
-      <p className="text-[12px] font-medium text-[#196e56]">
+      <p className="text-[12px] font-medium text-[var(--quiz-green-ink)]">
         {pergunta.categorias.nome}
       </p>
 
       {/* Enunciado */}
-      <h2 className="text-[18px] font-medium leading-[1.4] text-[#1b1b19]">
+      <h2 className="text-[18px] font-medium leading-[1.4] text-[var(--quiz-text)]">
         {pergunta.enunciado}
       </h2>
 
@@ -93,16 +93,16 @@ export function QuestionCard({ pergunta, indice, total, onProxima }: Props) {
           const errouEsta = respondida && estaSelecionada && !eCorreta;
 
           // Estados visuais
-          let classe = "border-[0.5px] border-[#dad7ce] text-[#706f68]";
+          let classe = "border-[0.5px] border-[var(--quiz-border)] text-[var(--quiz-text-muted)]";
           if (respondida && eCorreta) {
             // a correta sempre fica verde ao revelar
-            classe = "border-[1.5px] border-[#5dc9a5] bg-[#e1f5ee] text-[#196e56]";
+            classe = "border-[1.5px] border-[var(--quiz-green-border)] bg-[var(--quiz-green-tint)] text-[var(--quiz-green-ink)]";
           } else if (errouEsta) {
             // escolha errada do usuário fica vermelha (vermelho = erro)
-            classe = "border-[1.5px] border-[#e2a0a0] bg-[#fdeaea] text-[#c0392b]";
+            classe = "border-[1.5px] border-[var(--quiz-error-border)] bg-[var(--quiz-error-bg)] text-[var(--quiz-error-text)]";
           } else if (verificando && estaSelecionada) {
             // aguardando a correção do servidor
-            classe = "border-[1.5px] border-[#5dc9a5] text-[#196e56]";
+            classe = "border-[1.5px] border-[var(--quiz-green-border)] text-[var(--quiz-green-ink)]";
           }
 
           return (
@@ -121,8 +121,8 @@ export function QuestionCard({ pergunta, indice, total, onProxima }: Props) {
               }
               transition={{ duration: 0.4 }}
               className={`flex w-full items-center gap-[10px] rounded-[10px] p-3 text-left transition-colors ${classe} ${
-                naoSei && !respondida && !estaSelecionada ? "text-[#9e9d94]" : ""
-              } ${!respondida && !verificando ? "hover:border-[#5dc9a5]" : ""} ${
+                naoSei && !respondida && !estaSelecionada ? "text-[var(--quiz-text-faint)]" : ""
+              } ${!respondida && !verificando ? "hover:border-[var(--quiz-green-border)]" : ""} ${
                 verificando && estaSelecionada ? "animate-pulse" : ""
               }`}
             >
@@ -141,7 +141,7 @@ export function QuestionCard({ pergunta, indice, total, onProxima }: Props) {
         })}
       </div>
 
-      {erro && <p className="text-[13px] text-[#c0392b]">{erro}</p>}
+      {erro && <p className="text-[13px] text-[var(--quiz-error-text)]">{erro}</p>}
 
       {/* Feedback (só após a correção do servidor) — entra deslizando */}
       <AnimatePresence initial={false}>
@@ -154,7 +154,7 @@ export function QuestionCard({ pergunta, indice, total, onProxima }: Props) {
             transition={{ duration: 0.3, ease: "easeOut" }}
             className="overflow-hidden"
           >
-            <div className="flex flex-col gap-1 rounded-[10px] bg-[#e1f5ee] px-[14px] py-3 text-[13px] text-[#196e56]">
+            <div className="flex flex-col gap-1 rounded-[10px] bg-[var(--quiz-green-tint)] px-[14px] py-3 text-[13px] text-[var(--quiz-green-ink)]">
               <p className="font-medium">
                 {correcao.acertou
                   ? `Resposta correta  ·  +${correcao.pontos}`
@@ -175,7 +175,7 @@ export function QuestionCard({ pergunta, indice, total, onProxima }: Props) {
         type="button"
         onClick={proxima}
         disabled={!respondida}
-        className="flex w-full items-center justify-center rounded-xl bg-[#196e56] py-[13px] text-[15px] font-medium text-white transition-opacity disabled:opacity-40"
+        className="flex w-full items-center justify-center rounded-xl bg-[var(--quiz-green)] py-[13px] text-[15px] font-medium text-[var(--quiz-on-green)] transition-opacity disabled:opacity-40"
       >
         {indice + 1 === total ? "Ver resultado  →" : "Próxima  →"}
       </button>

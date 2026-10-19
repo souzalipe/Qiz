@@ -1,0 +1,39 @@
+/* app/quiz-theme.css  (importado em app/layout.tsx)
+   Tokens de cor do quiz — versão clara e escura.
+   O dark mode liga quando existe a classe .dark num ancestral (padrão do next-themes/shadcn). */
+
+:root {
+  --quiz-bg: #f4f6f4;          /* fundo da página */
+  --quiz-surface: #ffffff;     /* fundo do card */
+  --quiz-surface-2: #f4f2ec;   /* avatar / superfície sutil */
+  --quiz-border: #dad7ce;      /* borda neutra */
+  --quiz-text: #1b1b19;        /* texto principal */
+  --quiz-text-muted: #706f68;  /* texto secundário */
+  --quiz-text-faint: #78776d;  /* "Não sei" / terciário — era #9e9d94 (2,7:1); ajustado para 4,5:1 (WCAG AA) */
+  --quiz-green: #196e56;       /* verde de marca (botões, barra) */
+  --quiz-green-ink: #196e56;   /* verde para TEXTO sobre superfícies */
+  --quiz-green-tint: #e1f5ee;  /* superfície verde (feedback, opção certa) */
+  --quiz-green-border: #5dc9a5;/* borda da opção correta */
+  --quiz-on-green: #ffffff;    /* texto sobre botão verde */
+  --quiz-error-text: #c0392b;
+  --quiz-error-bg: #fdeaea;
+  --quiz-error-border: #e2a0a0;
+}
+
+.dark {
+  --quiz-bg: #0e1411;
+  --quiz-surface: #161d19;
+  --quiz-surface-2: #222a26;
+  --quiz-border: #2c352f;
+  --quiz-text: #e9ece9;
+  --quiz-text-muted: #9ba49e;
+  --quiz-text-faint: #7b867f;   /* era #6e7872 (3,8:1); ajustado para 4,5:1 (WCAG AA) */
+  --quiz-green: #1e8264;       /* vivo no escuro; era #22916f, mas o texto branco ficava com 3,9:1 — agora 4,7:1 */
+  --quiz-green-ink: #5fcaa6;   /* verde claro, legível sobre superfície escura */
+  --quiz-green-tint: #15302a;  /* verde escuro tintado */
+  --quiz-green-border: #3f8f75;
+  --quiz-on-green: #ffffff;
+  --quiz-error-text: #f0908e;
+  --quiz-error-bg: #3a211f;
+  --quiz-error-border: #6b3a37;
+}

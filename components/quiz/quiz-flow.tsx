@@ -46,6 +46,9 @@ export function QuizFlow() {
   const [respostas, setRespostas] = useState<RespostaDada[]>([]);
 
   const [salvamento, setSalvamento] = useState<StatusSalvamento>("salvando");
+  // Confetes só na primeira vez que o resultado da partida aparece (não ao
+  // voltar do ranking).
+  const [jaCelebrou, setJaCelebrou] = useState(false);
   const [partidaId, setPartidaId] = useState<string | null>(null);
 
   // Busca (e embaralha) as perguntas e zera a partida.
@@ -57,6 +60,7 @@ export function QuizFlow() {
     setAcertos(0);
     setRespostas([]);
     setPartidaId(null);
+    setJaCelebrou(false);
 
     getPerguntas()
       .then(setPerguntas)
@@ -150,11 +154,11 @@ export function QuizFlow() {
       return [
         "erro",
         <div key="erro" className="flex flex-col items-center gap-3 text-center">
-          <p className="text-sm text-[#c0392b]">{erro}</p>
+          <p className="text-sm text-[var(--quiz-error-text)]">{erro}</p>
           <button
             type="button"
             onClick={carregarPerguntas}
-            className="text-sm font-medium text-[#196e56] underline"
+            className="text-sm font-medium text-[var(--quiz-green-ink)] underline"
           >
             Tentar de novo
           </button>
@@ -165,7 +169,7 @@ export function QuizFlow() {
     if (perguntas === null) {
       return [
         "carregando",
-        <p key="carregando" className="text-center text-sm text-[#706f68]">
+        <p key="carregando" className="text-center text-sm text-[var(--quiz-text-muted)]">
           Carregando perguntas…
         </p>,
       ];
@@ -174,7 +178,7 @@ export function QuizFlow() {
     if (perguntas.length === 0) {
       return [
         "vazio",
-        <p key="vazio" className="text-center text-sm text-[#706f68]">
+        <p key="vazio" className="text-center text-sm text-[var(--quiz-text-muted)]">
           Nenhuma pergunta cadastrada.
         </p>,
       ];
@@ -189,15 +193,19 @@ export function QuizFlow() {
             acertos={acertos}
             total={perguntas.length}
             onJogarNovo={jogarNovamente}
-            onVerRanking={() => setTela("ranking")}
+            celebrar={!jaCelebrou}
+            onVerRanking={() => {
+              setJaCelebrou(true);
+              setTela("ranking");
+            }}
             onInicio={() => setTela("identificacao")}
           />
           {/* Situação da gravação (só aparece enquanto salva ou se falhar) */}
           {salvamento === "salvando" && (
-            <p className="text-center text-[13px] text-[#706f68]">Salvando sua partida…</p>
+            <p className="text-center text-[13px] text-[var(--quiz-text-muted)]">Salvando sua partida…</p>
           )}
           {salvamento === "erro" && (
-            <p className="text-center text-[13px] text-[#c0392b]">
+            <p className="text-center text-[13px] text-[var(--quiz-error-text)]">
               Não foi possível salvar sua partida.{" "}
               <button
                 type="button"

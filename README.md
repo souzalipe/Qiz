@@ -111,6 +111,15 @@ npx supabase db push
 Nunca altere uma migration que já foi aplicada: para mudar a estrutura, crie
 uma nova migration (`npx supabase migration new <nome>`).
 
+## Tema claro/escuro
+
+As cores do quiz são tokens CSS (`--quiz-*`) definidos em `app/quiz-theme.css`,
+com uma versão clara (`:root`) e uma escura (`.dark`). O `next-themes`
+(`components/theme-provider.tsx`) liga a classe `.dark` no `<html>`: começa
+seguindo o tema do aparelho e o botão no canto superior direito
+(`components/theme-toggle.tsx`) grava a escolha da pessoa. Todos os pares de
+texto/fundo usados têm contraste mínimo de 4,5:1 (WCAG AA) nos dois temas.
+
 ## Fases
 
 - [x] **Fase 1 — Fundação:** projeto, tema, shadcn/ui e cliente do Supabase.

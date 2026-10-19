@@ -43,26 +43,26 @@ export function PlayerForm({ inicial, onIdentificado }: Props) {
   }
 
   const campo =
-    "w-full rounded-[10px] border-[0.5px] border-[#dad7ce] px-3 py-3 text-[15px] text-[#1b1b19] outline-none transition-colors placeholder:text-[#9e9d94] focus:border-[#5dc9a5]";
+    "w-full rounded-[10px] border-[0.5px] border-[var(--quiz-border)] px-3 py-3 text-[15px] text-[var(--quiz-text)] outline-none transition-colors placeholder:text-[var(--quiz-text-faint)] focus:border-[var(--quiz-green-border)]";
 
   return (
     <form
       onSubmit={enviar}
-      className="flex w-full flex-col gap-5 rounded-3xl border-[0.5px] border-[#dad7ce] bg-white p-6"
+      className="flex w-full flex-col gap-5 rounded-3xl border-[0.5px] border-[var(--quiz-border)] bg-[var(--quiz-surface)] p-6"
     >
       <div className="flex flex-col gap-1 text-center">
         <span className="text-[36px]" aria-hidden>
           ♻️
         </span>
-        <h1 className="text-[22px] font-medium text-[#1b1b19]">Quiz Circular</h1>
-        <p className="text-[14px] leading-[1.4] text-[#706f68]">
+        <h1 className="text-[22px] font-medium text-[var(--quiz-text)]">Quiz Circular</h1>
+        <p className="text-[14px] leading-[1.4] text-[var(--quiz-text-muted)]">
           Teste seus conhecimentos sobre economia circular. Antes de começar,
           diga quem você é.
         </p>
       </div>
 
       <label className="flex flex-col gap-[6px]">
-        <span className="text-[13px] font-medium text-[#196e56]">Nome</span>
+        <span className="text-[13px] font-medium text-[var(--quiz-green-ink)]">Nome</span>
         <input
           className={campo}
           value={nome}
@@ -75,7 +75,7 @@ export function PlayerForm({ inicial, onIdentificado }: Props) {
       </label>
 
       <label className="flex flex-col gap-[6px]">
-        <span className="text-[13px] font-medium text-[#196e56]">Turma</span>
+        <span className="text-[13px] font-medium text-[var(--quiz-green-ink)]">Turma</span>
         <input
           className={campo}
           value={turma}
@@ -86,12 +86,12 @@ export function PlayerForm({ inicial, onIdentificado }: Props) {
         />
       </label>
 
-      {erro && <p className="text-[13px] text-[#c0392b]">{erro}</p>}
+      {erro && <p className="text-[13px] text-[var(--quiz-error-text)]">{erro}</p>}
 
       <button
         type="submit"
         disabled={!valido || salvando}
-        className="flex w-full items-center justify-center rounded-xl bg-[#196e56] py-[13px] text-[15px] font-medium text-white transition-opacity disabled:opacity-40"
+        className="flex w-full items-center justify-center rounded-xl bg-[var(--quiz-green)] py-[13px] text-[15px] font-medium text-[var(--quiz-on-green)] transition-opacity disabled:opacity-40"
       >
         {salvando ? "Salvando…" : "Começar quiz  →"}
       </button>

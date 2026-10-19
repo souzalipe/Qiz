@@ -117,16 +117,16 @@ export function RankingContainer({
   }
 
   return (
-    <div className="flex w-full flex-col gap-4 rounded-3xl border-[0.5px] border-[#dad7ce] bg-white px-5 py-[22px]">
+    <div className="flex w-full flex-col gap-4 rounded-3xl border-[0.5px] border-[var(--quiz-border)] bg-[var(--quiz-surface)] px-5 py-[22px]">
       <div className="flex items-center gap-[10px]">
-        <button type="button" onClick={onVoltar} aria-label="Voltar" className="text-[22px] text-[#706f68]">
+        <button type="button" onClick={onVoltar} aria-label="Voltar" className="text-[22px] text-[var(--quiz-text-muted)]">
           ‹
         </button>
-        <span className="text-[18px] font-medium text-[#1b1b19]">Ranking</span>
+        <span className="text-[18px] font-medium text-[var(--quiz-text)]">Ranking</span>
       </div>
       <p
         className={`text-[13px] ${
-          salvamento === "erro" || erro ? "text-[#c0392b]" : "text-[#706f68]"
+          salvamento === "erro" || erro ? "text-[var(--quiz-error-text)]" : "text-[var(--quiz-text-muted)]"
         }`}
       >
         {mensagem}
