@@ -3,6 +3,10 @@ import { GeistSans } from "geist/font/sans";
 import { GeistMono } from "geist/font/mono";
 
 import "./globals.css";
+import "./quiz-theme.css";
+
+import { ThemeProvider } from "@/components/theme-provider";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 // Metadados exibidos na aba do navegador e ao compartilhar o link.
 export const metadata: Metadata = {
@@ -16,7 +20,11 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  themeColor: "#16a34a",
+  // Cor da barra do navegador no celular, acompanhando o tema.
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#f4f6f4" },
+    { media: "(prefers-color-scheme: dark)", color: "#0e1411" },
+  ],
 };
 
 // Layout raiz: envolve todas as páginas do app.
@@ -26,11 +34,17 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="pt-BR">
+    // suppressHydrationWarning: o next-themes coloca a classe .dark no <html>
+    // antes do React carregar, o que é esperado (evita "piscar" o tema claro).
+    <html lang="pt-BR" suppressHydrationWarning>
       <body
-        className={`${GeistSans.variable} ${GeistMono.variable} font-sans antialiased`}
+        // Fundo e texto da página acompanham o tema (tokens do quiz).
+        className={`${GeistSans.variable} ${GeistMono.variable} bg-[var(--quiz-bg)] font-sans text-[var(--quiz-text)] antialiased`}
       >
-        {children}
+        <ThemeProvider>
+          <ThemeToggle />
+          {children}
+        </ThemeProvider>
       </body>
     </html>
   );
