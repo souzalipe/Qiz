@@ -18,13 +18,12 @@ export interface PartidaRegistrada {
   acertos: number;
 }
 
-export interface LinhaRanking {
+export interface LinhaClassificacao {
   posicao: number;
   partida_id: string;
   nome: string;
-  turma: string | null;
   pontuacao: number;
-  acertos: number;
+  total: number; // total de participantes (partidas) na lista consultada
 }
 
 /**
@@ -68,17 +67,35 @@ export async function registrarPartida(
 }
 
 /**
- * Busca o ranking (top `limite`). Se `partidaId` for informado, essa partida
- * sempre vem junto, mesmo fora do top, para ser destacada na tela.
+ * Busca a classificação (função `classificacao` do banco): top `limite` +
+ * a partida `partidaId` (sempre incluída, mesmo fora do top). Com `turma`,
+ * só as partidas dessa turma, com posições recalculadas dentro dela.
  */
-export async function getRanking(partidaId?: string, limite = 10): Promise<LinhaRanking[]> {
+export async function getClassificacao(
+  partidaId: string,
+  turma?: string,
+  limite = 10
+): Promise<LinhaClassificacao[]> {
   const supabase = createClient();
 
-  const { data, error } = await supabase.rpc("ranking", {
+  const { data, error } = await supabase.rpc("classificacao", {
     p_partida_id: partidaId,
+    p_turma: turma,
     p_limite: limite,
   });
   if (error) throw error;
 
   return data ?? [];
+}
+
+/**
+ * Iniciais para o avatar do ranking: primeira letra do primeiro e do último
+ * nome ("Felipe Nascimento" → "FN"; "Ana" → "A").
+ */
+export function iniciais(nome: string): string {
+  const partes = nome.trim().split(/\s+/).filter(Boolean);
+  if (partes.length === 0) return "?";
+  const primeira = partes[0][0];
+  const ultima = partes.length > 1 ? partes[partes.length - 1][0] : "";
+  return (primeira + ultima).toUpperCase();
 }

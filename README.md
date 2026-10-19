@@ -77,6 +77,8 @@ versionados e aplicados em ordem (o prefixo é a data/hora):
 | `20261016120000_ordem_alternativas.sql` | Coluna `alternativas.ordem` (A–E fixos, "Não sei." por último) |
 | `20261016120100_funcao_responder.sql` | Função `responder`: corrige cada resposta no servidor |
 | `20261016120200_gabarito_protegido.sql` | Bloqueia `correta`/`feedback` para o app e fecha inserts diretos em `partidas`/`respostas` |
+| `20261019120000_redistribui_letra_correta.sql` | Reposiciona as alternativas: 8 corretas em cada letra A–D ("Não sei." em E) |
+| `20261019120100_classificacao.sql` | Função `classificacao`: ranking geral/por turma com total de participantes |
 
 ### Seed (perguntas do quiz)
 
@@ -88,6 +90,12 @@ com `db push` — aplique uma vez pelo SQL Editor do painel.
 As alternativas não precisam informar `ordem`: um trigger numera na ordem do
 INSERT (a primeira inserida de cada pergunta é a A). Mantenha "Não sei." como a
 última de cada pergunta.
+
+**Atenção:** as posições balanceadas (8 corretas por letra) são aplicadas pela
+migration `20261019120000_redistribui_letra_correta.sql`, que roda *antes* do
+seed num banco recriado do zero — e por isso não encontra alternativas para
+reposicionar. Ao montar o `seed.sql`, inclua a coluna `ordem` nos INSERTs com
+as posições balanceadas (ou rode o conteúdo dessa migration no fim do seed).
 
 As duas migrations já estão aplicadas no projeto Supabase do quiz
 (ref `yuonmgkzbzvytxdvhytr`, organização "Felipe Projects").
