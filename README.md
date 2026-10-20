@@ -14,8 +14,8 @@ voltado a estudantes de pós-graduação. Produto da dissertação de mestrado.
 
 ```
 app/                 Rotas e páginas (App Router)
-  layout.tsx         Layout raiz (fontes, metadados, viewport mobile)
-  page.tsx           Página inicial ("Olá, Quiz Circular")
+  layout.tsx         Layout raiz (fontes, metadados, tema, viewport mobile)
+  quiz/page.tsx      O quiz (a raiz "/" redireciona para cá — ver next.config.ts)
   globals.css        Tema branco + verde (variáveis do shadcn/ui)
 components/
   ui/                Componentes do shadcn/ui (button, card…)
@@ -41,7 +41,7 @@ cp .env.example .env.local   # depois preencha com as credenciais do Supabase
 npm run dev
 ```
 
-Abra http://localhost:3000. Para testar no celular, acesse
+Abra http://localhost:3000 (redireciona para `/quiz`). Para testar no celular, acesse
 `http://<IP-do-seu-computador>:3000` na mesma rede Wi-Fi.
 
 As credenciais ficam no dashboard do Supabase em
@@ -119,6 +119,22 @@ com uma versão clara (`:root`) e uma escura (`.dark`). O `next-themes`
 seguindo o tema do aparelho e o botão no canto superior direito
 (`components/theme-toggle.tsx`) grava a escolha da pessoa. Todos os pares de
 texto/fundo usados têm contraste mínimo de 4,5:1 (WCAG AA) nos dois temas.
+
+## Deploy na Vercel
+
+1. Importe o repositório na Vercel (framework detectado: Next.js; não precisa
+   mudar comandos de build).
+2. Em **Settings > Environment Variables**, cadastre para *Production* (e
+   *Preview*, se for usar):
+   - `NEXT_PUBLIC_SUPABASE_URL`
+   - `NEXT_PUBLIC_SUPABASE_ANON_KEY` (a chave publicável do Supabase)
+3. Faça o deploy. Se alguma variável faltar, o build **falha de propósito**
+   com uma mensagem dizendo qual (ver `next.config.ts`): variáveis
+   `NEXT_PUBLIC_*` são embutidas no JavaScript durante o build, então sem elas
+   o site publicado quebraria ao buscar as perguntas.
+
+Depois de mudar uma variável na Vercel, é preciso refazer o deploy
+(**Deployments > Redeploy**) para ela valer.
 
 ## Fases
 
