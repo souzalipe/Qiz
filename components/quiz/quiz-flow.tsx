@@ -242,12 +242,12 @@ export function QuizFlow() {
   const [chave, conteudo] = telaAtual();
   const ehPergunta = chave.startsWith("pergunta-");
 
-  // O glossário NÃO fica disponível durante as perguntas: vários verbetes
-  // (ex.: obsolescência programada, logística reversa) são praticamente a
-  // alternativa correta — consultá-lo no meio da pergunta entregaria a
-  // resposta e distorceria os dados da pesquisa. Aparece no formulário, no
-  // resultado e no ranking.
-  const mostrarBotaoGlossario = !ehPergunta;
+  // O glossário fica disponível em todas as telas, inclusive durante as
+  // perguntas (decisão da pesquisa), sempre no mesmo lugar (canto superior
+  // esquerdo). Ele abre POR CIMA da tela atual, então a
+  // pergunta em andamento não é desmontada: ao voltar, a seleção e a correção
+  // continuam como estavam (não dá para "responder de novo").
+  const mostrarBotaoGlossario = true;
 
   return (
     // reducedMotion="user": respeita quem pediu "reduzir movimento" no sistema.
