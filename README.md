@@ -141,4 +141,6 @@ Depois de mudar uma variável na Vercel, é preciso refazer o deploy
 
 - [x] **Fase 1 — Fundação:** projeto, tema, shadcn/ui e cliente do Supabase.
 - [x] **Fase 2 — Banco de dados:** tabelas, RLS e tipos gerados.
-- [ ] Próximas fases: fluxo do quiz, cadastro/login, resultados e deploy.
+- [x] **Fase 3 - Animações e Fluides:** Bibliotecas de animação para melhor experiência.
+- [x] **Fase 4 - Cadastro de Usuários e Ranking:** banco de dados, cadastro, resultados.
+- [X] Próximas fases: deploy da V1.
