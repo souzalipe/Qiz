@@ -218,18 +218,24 @@ export type Database = {
       }
       usuarios: {
         Row: {
+          consentimento: boolean
+          consentimento_em: string | null
           criado_em: string
           id: string
           nome: string
           turma: string | null
         }
         Insert: {
+          consentimento?: boolean
+          consentimento_em?: string | null
           criado_em?: string
           id?: string
           nome: string
           turma?: string | null
         }
         Update: {
+          consentimento?: boolean
+          consentimento_em?: string | null
           criado_em?: string
           id?: string
           nome?: string

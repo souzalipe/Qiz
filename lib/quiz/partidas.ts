@@ -19,7 +19,10 @@ export interface PartidaRegistrada {
 }
 
 /**
- * Cadastra o participante na tabela `usuarios`.
+ * Cadastra o participante na tabela `usuarios`, com o aceite do aviso de
+ * privacidade (LGPD). Só é chamada depois que a caixa foi marcada na tela
+ * inicial; o banco recusa cadastro sem consentimento e grava a data/hora do
+ * aceite (consentimento_em) pelo relógio do servidor.
  * O id é gerado aqui no navegador (ver lib/uuid.ts) porque o RLS só permite INSERT (o app não
  * pode ler a tabela de volta para descobrir o id gerado pelo banco).
  */
@@ -27,7 +30,9 @@ export async function criarJogador(nome: string, turma: string): Promise<Jogador
   const supabase = createClient();
   const jogador = { id: gerarUuid(), nome: nome.trim(), turma: turma.trim() };
 
-  const { error } = await supabase.from("usuarios").insert(jogador);
+  const { error } = await supabase
+    .from("usuarios")
+    .insert({ ...jogador, consentimento: true });
   if (error) throw error;
 
   return jogador;

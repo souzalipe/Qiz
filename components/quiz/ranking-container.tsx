@@ -13,10 +13,13 @@ const TOP = 10;
 type Props = {
   // Partida do jogador atual (null enquanto ainda está sendo gravada): o
   // ranking só é buscado depois de gravada, para já incluir esta partida.
+  // Na consulta pela tela inicial não há partida (consulta = true).
   partidaId: string | null;
-  usuarioId: string;
+  consulta?: boolean;
+  // Participante atual; ausente se ainda não se cadastrou (sem aba da turma).
+  usuarioId?: string;
   salvamento: "salvando" | "salvo" | "erro";
-  turma: string;
+  turma?: string;
   onTentarSalvar: () => void;
   onVoltar: () => void;
 };
@@ -55,6 +58,7 @@ function minhaPosicao(linhas: RankingRow[]) {
 // gravação falhou, oferece tentar de novo.
 export function RankingContainer({
   partidaId,
+  consulta = false,
   usuarioId,
   salvamento,
   turma,
@@ -65,16 +69,18 @@ export function RankingContainer({
   const [erro, setErro] = useState(false);
 
   useEffect(() => {
-    if (!partidaId) return;
+    if (!partidaId && !consulta) return;
     let ativo = true;
 
     Promise.all([
       getRanking(null, usuarioId),
-      // Se a busca da turma falhar, a aba "Minha turma" mostra o geral.
-      getRanking(turma, usuarioId).catch((e: unknown) => {
-        console.error(e);
-        return null;
-      }),
+      // Se a busca da turma falhar, a aba "Minha turma" não aparece.
+      turma
+        ? getRanking(turma, usuarioId).catch((e: unknown) => {
+            console.error(e);
+            return null;
+          })
+        : null,
     ])
       .then(([geral, daTurma]) => {
         if (!ativo) return;
@@ -97,16 +103,17 @@ export function RankingContainer({
     return () => {
       ativo = false;
     };
-  }, [partidaId, usuarioId, turma]);
+  }, [partidaId, consulta, usuarioId, turma]);
 
-  if (dados) {
+  if (dados && dados.geral.length > 0) {
     return <RankingScreen {...dados} onVoltar={onVoltar} />;
   }
 
   // Estados intermediários, no mesmo cartão do design.
   let mensagem: React.ReactNode = "Carregando ranking…";
-  if (salvamento === "salvando") mensagem = "Salvando sua partida…";
-  if (salvamento === "erro") {
+  if (dados) mensagem = "Ainda não há partidas no ranking. Seja o primeiro!";
+  else if (salvamento === "salvando" && !consulta) mensagem = "Salvando sua partida…";
+  if (salvamento === "erro" && !consulta) {
     mensagem = (
       <>
         Não foi possível salvar sua partida.{" "}
@@ -129,7 +136,7 @@ export function RankingContainer({
       </div>
       <p
         className={`text-[13px] ${
-          salvamento === "erro" || erro ? "text-[var(--quiz-error-text)]" : "text-[var(--quiz-text-muted)]"
+          (salvamento === "erro" && !consulta) || erro ? "text-[var(--quiz-error-text)]" : "text-[var(--quiz-text-muted)]"
         }`}
       >
         {mensagem}

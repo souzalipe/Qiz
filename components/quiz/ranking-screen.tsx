@@ -13,7 +13,11 @@ export type RankingEntry = {
 
 type Props = {
   geral: RankingEntry[];
+  // Sem lista da turma (participante ainda não cadastrado), a aba "Minha
+  // turma" não aparece.
   turma?: RankingEntry[];
+  // 0 = quem está vendo não está no ranking (ex.: abriu pela tela inicial
+  // antes de jogar): mostra só o total de participantes.
   minhaPosicao: number;
   totalParticipantes: number;
   // Opcional: posição/total dentro da turma, mostrados na aba "Minha turma".
@@ -60,22 +64,26 @@ export function RankingScreen({
         >
           Geral
         </button>
-        <button
-          type="button"
-          onClick={() => setAba("turma")}
-          className={`flex-1 rounded-full py-[7px] text-[13px] font-medium ${
-            aba === "turma"
-              ? "bg-[var(--quiz-green)] text-[var(--quiz-on-green)]"
-              : "border-[0.5px] border-[var(--quiz-border)] text-[var(--quiz-text-muted)]"
-          }`}
-        >
-          Minha turma
-        </button>
+        {turma && (
+          <button
+            type="button"
+            onClick={() => setAba("turma")}
+            className={`flex-1 rounded-full py-[7px] text-[13px] font-medium ${
+              aba === "turma"
+                ? "bg-[var(--quiz-green)] text-[var(--quiz-on-green)]"
+                : "border-[0.5px] border-[var(--quiz-border)] text-[var(--quiz-text-muted)]"
+            }`}
+          >
+            Minha turma
+          </button>
+        )}
       </div>
 
       {/* Posição do jogador */}
       <p className="text-[12px] text-[var(--quiz-text-muted)]">
-        Você está em {posicao}º de {total} participantes
+        {posicao
+          ? `Você está em ${posicao}º de ${total} participantes`
+          : `${total} ${total === 1 ? "participante" : "participantes"}`}
       </p>
 
       {/* Lista */}
