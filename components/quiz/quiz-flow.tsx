@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { AnimatePresence, MotionConfig, motion } from "motion/react";
 import { BookOpen } from "lucide-react";
 
@@ -22,8 +22,10 @@ import type { Pergunta, RespostaDada } from "@/lib/quiz/types";
 //
 // - Identificação: nome e turma → grava em `usuarios` (uma vez por visita;
 //   "jogar de novo" mantém o mesmo jogador).
-// - Jogando: acumula pontuação, acertos e as respostas dadas.
-// - Resultado: grava a partida e as respostas (função registrar_partida).
+// - Jogando: 10 perguntas sorteadas; acumula pontuação, acertos e as
+//   respostas dadas, e cronometra a partida (da 1ª pergunta na tela até
+//   responder a última).
+// - Resultado: grava a partida, as respostas e o tempo (registrar_partida).
 // - Ranking: melhores pontuações (geral e da turma), com a partida atual
 //   destacada.
 //
@@ -56,6 +58,12 @@ export function QuizFlow() {
   const fecharGlossario = useCallback(() => setGlossarioAberto(false), []);
   const [partidaId, setPartidaId] = useState<string | null>(null);
 
+  // Cronômetro: início = quando a 1ª pergunta aparece (as perguntas já são
+  // carregadas durante o cadastro, então não dá para usar o fim da busca).
+  // Duração guardada para o "tentar de novo" da gravação.
+  const inicioRef = useRef<number | null>(null);
+  const [tempoMs, setTempoMs] = useState(0);
+
   // Busca (e embaralha) as perguntas e zera a partida.
   const carregarPerguntas = useCallback(() => {
     setPerguntas(null);
@@ -66,6 +74,7 @@ export function QuizFlow() {
     setRespostas([]);
     setPartidaId(null);
     setJaCelebrou(false);
+    inicioRef.current = null;
 
     getPerguntas()
       .then(setPerguntas)
@@ -80,11 +89,18 @@ export function QuizFlow() {
     carregarPerguntas();
   }, [carregarPerguntas]);
 
+  // Dispara o cronômetro quando a 1ª pergunta entra na tela.
+  useEffect(() => {
+    if (tela === "jogando" && perguntas?.length && inicioRef.current === null) {
+      inicioRef.current = Date.now();
+    }
+  }, [tela, perguntas]);
+
   // Grava a partida no Supabase. Chamado ao terminar (e no "tentar de novo").
-  async function salvarPartida(jogadorId: string, lista: RespostaDada[]) {
+  async function salvarPartida(jogadorId: string, lista: RespostaDada[], duracao: number) {
     setSalvamento("salvando");
     try {
-      const partida = await registrarPartida(jogadorId, lista);
+      const partida = await registrarPartida(jogadorId, lista, duracao);
       setPartidaId(partida.partida_id);
       setSalvamento("salvo");
     } catch (e) {
@@ -110,8 +126,10 @@ export function QuizFlow() {
 
     // Última pergunta → resultado (e grava); senão, avança.
     if (indice + 1 >= perguntas.length) {
+      const duracao = Date.now() - (inicioRef.current ?? Date.now());
+      setTempoMs(duracao);
       setTela("resultado");
-      void salvarPartida(jogador.id, novasRespostas);
+      void salvarPartida(jogador.id, novasRespostas, duracao);
     } else {
       setIndice(indice + 1);
     }
@@ -149,7 +167,7 @@ export function QuizFlow() {
           partidaId={partidaId}
           salvamento={salvamento}
           turma={jogador.turma}
-          onTentarSalvar={() => void salvarPartida(jogador.id, respostas)}
+          onTentarSalvar={() => void salvarPartida(jogador.id, respostas, tempoMs)}
           onVoltar={() => setTela("resultado")}
         />,
       ];
@@ -214,7 +232,7 @@ export function QuizFlow() {
               Não foi possível salvar sua partida.{" "}
               <button
                 type="button"
-                onClick={() => void salvarPartida(jogador.id, respostas)}
+                onClick={() => void salvarPartida(jogador.id, respostas, tempoMs)}
                 className="font-medium underline"
               >
                 Tentar de novo

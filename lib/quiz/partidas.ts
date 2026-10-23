@@ -42,14 +42,16 @@ export async function criarJogador(nome: string, turma: string): Promise<Jogador
 }
 
 /**
- * Grava a partida e as respostas via a função `registrar_partida` do banco
- * (ver supabase/migrations/20261014120000_registro_partida_e_ranking.sql).
+ * Grava a partida, as respostas e a duração via a função `registrar_partida`
+ * do banco (ver supabase/migrations/20261024120000_v2_bloco_b.sql).
  * O banco recalcula acertos e pontuação pelo gabarito, então só enviamos
- * qual alternativa foi escolhida em cada pergunta.
+ * qual alternativa foi escolhida em cada pergunta. tempoMs vai para
+ * partidas.tempo_ms (desempate do ranking).
  */
 export async function registrarPartida(
   usuarioId: string,
-  respostas: RespostaDada[]
+  respostas: RespostaDada[],
+  tempoMs: number
 ): Promise<PartidaRegistrada> {
   const supabase = createClient();
 
@@ -59,6 +61,7 @@ export async function registrarPartida(
       pergunta_id,
       alternativa_id,
     })),
+    p_tempo_ms: Math.round(tempoMs),
   });
   if (error) throw error;
   if (!data?.[0]) throw new Error("O banco não devolveu a partida gravada.");
