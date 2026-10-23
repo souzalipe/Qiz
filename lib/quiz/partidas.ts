@@ -1,5 +1,5 @@
-// Gravação dos dados da pesquisa (usuarios, partidas, respostas) e leitura
-// do ranking. Usa o cliente Supabase do navegador: chamar só em Client
+// Gravação dos dados da pesquisa (usuarios, partidas, respostas). O ranking
+// fica em queries.ts (getRanking). Usa o cliente Supabase do navegador: chamar só em Client
 // Components.
 
 import { createClient } from "@/lib/supabase/client";
@@ -18,14 +18,6 @@ export interface PartidaRegistrada {
   acertos: number;
 }
 
-export interface LinhaClassificacao {
-  posicao: number;
-  partida_id: string;
-  nome: string;
-  pontuacao: number;
-  total: number; // total de participantes (partidas) na lista consultada
-}
-
 /**
  * Cadastra o participante na tabela `usuarios`.
  * O id é gerado aqui no navegador (ver lib/uuid.ts) porque o RLS só permite INSERT (o app não
@@ -42,14 +34,16 @@ export async function criarJogador(nome: string, turma: string): Promise<Jogador
 }
 
 /**
- * Grava a partida e as respostas via a função `registrar_partida` do banco
- * (ver supabase/migrations/20261014120000_registro_partida_e_ranking.sql).
+ * Grava a partida, as respostas e a duração via a função `registrar_partida`
+ * do banco (ver supabase/migrations/20261024120000_v2_bloco_b.sql).
  * O banco recalcula acertos e pontuação pelo gabarito, então só enviamos
- * qual alternativa foi escolhida em cada pergunta.
+ * qual alternativa foi escolhida em cada pergunta. tempoMs vai para
+ * partidas.tempo_ms (desempate do ranking).
  */
 export async function registrarPartida(
   usuarioId: string,
-  respostas: RespostaDada[]
+  respostas: RespostaDada[],
+  tempoMs: number
 ): Promise<PartidaRegistrada> {
   const supabase = createClient();
 
@@ -59,33 +53,12 @@ export async function registrarPartida(
       pergunta_id,
       alternativa_id,
     })),
+    p_tempo_ms: Math.round(tempoMs),
   });
   if (error) throw error;
   if (!data?.[0]) throw new Error("O banco não devolveu a partida gravada.");
 
   return data[0];
-}
-
-/**
- * Busca a classificação (função `classificacao` do banco): top `limite` +
- * a partida `partidaId` (sempre incluída, mesmo fora do top). Com `turma`,
- * só as partidas dessa turma, com posições recalculadas dentro dela.
- */
-export async function getClassificacao(
-  partidaId: string,
-  turma?: string,
-  limite = 10
-): Promise<LinhaClassificacao[]> {
-  const supabase = createClient();
-
-  const { data, error } = await supabase.rpc("classificacao", {
-    p_partida_id: partidaId,
-    p_turma: turma,
-    p_limite: limite,
-  });
-  if (error) throw error;
-
-  return data ?? [];
 }
 
 /**

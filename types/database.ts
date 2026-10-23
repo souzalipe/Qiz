@@ -39,7 +39,7 @@ export type Database = {
         Insert: {
           correta?: boolean
           id?: string
-          ordem?: number
+          ordem: number
           pergunta_id: string
           texto: string
         }
@@ -75,12 +75,34 @@ export type Database = {
         }
         Relationships: []
       }
+      desafios: {
+        Row: {
+          ativo: boolean
+          id: string
+          ordem: number
+          texto: string
+        }
+        Insert: {
+          ativo?: boolean
+          id?: string
+          ordem: number
+          texto: string
+        }
+        Update: {
+          ativo?: boolean
+          id?: string
+          ordem?: number
+          texto?: string
+        }
+        Relationships: []
+      }
       partidas: {
         Row: {
           acertos: number
           criado_em: string
           id: string
           pontuacao: number
+          tempo_ms: number | null
           usuario_id: string
         }
         Insert: {
@@ -88,6 +110,7 @@ export type Database = {
           criado_em?: string
           id?: string
           pontuacao?: number
+          tempo_ms?: number | null
           usuario_id: string
         }
         Update: {
@@ -95,6 +118,7 @@ export type Database = {
           criado_em?: string
           id?: string
           pontuacao?: number
+          tempo_ms?: number | null
           usuario_id?: string
         }
         Relationships: [
@@ -228,6 +252,24 @@ export type Database = {
           total: number
         }[]
       }
+      desafio_do_dia: {
+        Args: never
+        Returns: {
+          id: string
+          texto: string
+        }[]
+      }
+      obter_ranking: {
+        Args: { p_turma?: string; p_usuario_id?: string }
+        Returns: {
+          nome: string
+          pontuacao: number
+          posicao: number
+          tempo_ms: number
+          turma: string
+          voce: boolean
+        }[]
+      }
       ranking: {
         Args: { p_limite?: number; p_partida_id?: string }
         Returns: {
@@ -249,14 +291,27 @@ export type Database = {
           pontos: number
         }[]
       }
-      registrar_partida: {
-        Args: { p_respostas: Json; p_usuario_id: string }
-        Returns: {
-          acertos: number
-          partida_id: string
-          pontuacao: number
-        }[]
-      }
+      registrar_partida:
+        | {
+            Args: { p_respostas: Json; p_usuario_id: string }
+            Returns: {
+              acertos: number
+              partida_id: string
+              pontuacao: number
+            }[]
+          }
+        | {
+            Args: {
+              p_respostas: Json
+              p_tempo_ms: number
+              p_usuario_id: string
+            }
+            Returns: {
+              acertos: number
+              partida_id: string
+              pontuacao: number
+            }[]
+          }
     }
     Enums: {
       [_ in never]: never

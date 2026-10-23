@@ -3,15 +3,18 @@
 import { useEffect, useState } from "react";
 
 import { RankingScreen, type RankingEntry } from "@/components/quiz/ranking-screen";
-import {
-  getClassificacao,
-  iniciais,
-  type LinhaClassificacao,
-} from "@/lib/quiz/partidas";
+import { iniciais } from "@/lib/quiz/partidas";
+import { getRanking, type RankingRow } from "@/lib/quiz/queries";
+
+// Quantas posições do topo mostrar (o jogador aparece logo abaixo se estiver
+// fora delas).
+const TOP = 10;
 
 type Props = {
-  // Partida do jogador atual (null enquanto ainda está sendo gravada).
+  // Partida do jogador atual (null enquanto ainda está sendo gravada): o
+  // ranking só é buscado depois de gravada, para já incluir esta partida.
   partidaId: string | null;
+  usuarioId: string;
   salvamento: "salvando" | "salvo" | "erro";
   turma: string;
   onTentarSalvar: () => void;
@@ -27,25 +30,24 @@ type Dados = {
   totalTurma?: number;
 };
 
-// Converte as linhas do banco para o formato do RankingScreen: iniciais a
-// partir do nome, "Você" e voce: true na partida do jogador atual.
-function paraEntradas(linhas: LinhaClassificacao[], partidaId: string): RankingEntry[] {
-  return linhas.map((l) => {
-    const voce = l.partida_id === partidaId;
-    return {
+// Converte as linhas do banco (uma por participante, já ordenadas) para o
+// formato do RankingScreen: top 10 + a linha do jogador, se estiver fora;
+// iniciais a partir do nome; "Você" e voce: true na linha do jogador.
+function paraEntradas(linhas: RankingRow[]): RankingEntry[] {
+  return linhas
+    .filter((l, i) => i < TOP || l.voce)
+    .map((l) => ({
       posicao: l.posicao,
       iniciais: iniciais(l.nome),
-      nome: voce ? "Você" : l.nome,
+      nome: l.voce ? "Você" : l.nome,
       pontos: l.pontuacao,
-      voce,
-    };
-  });
+      voce: l.voce,
+    }));
 }
 
-// Posição e total do jogador numa lista (a partida dele sempre vem na lista).
-function minhaPosicao(linhas: LinhaClassificacao[], partidaId: string) {
-  const minha = linhas.find((l) => l.partida_id === partidaId);
-  return { posicao: minha?.posicao ?? 0, total: linhas[0]?.total ?? 0 };
+// Posição do jogador e total de participantes da lista.
+function minhaPosicao(linhas: RankingRow[]) {
+  return { posicao: linhas.find((l) => l.voce)?.posicao ?? 0, total: linhas.length };
 }
 
 // Busca o ranking geral e o da turma no Supabase e entrega ao RankingScreen
@@ -53,6 +55,7 @@ function minhaPosicao(linhas: LinhaClassificacao[], partidaId: string) {
 // gravação falhou, oferece tentar de novo.
 export function RankingContainer({
   partidaId,
+  usuarioId,
   salvamento,
   turma,
   onTentarSalvar,
@@ -66,20 +69,20 @@ export function RankingContainer({
     let ativo = true;
 
     Promise.all([
-      getClassificacao(partidaId),
+      getRanking(null, usuarioId),
       // Se a busca da turma falhar, a aba "Minha turma" mostra o geral.
-      getClassificacao(partidaId, turma).catch((e: unknown) => {
+      getRanking(turma, usuarioId).catch((e: unknown) => {
         console.error(e);
         return null;
       }),
     ])
       .then(([geral, daTurma]) => {
         if (!ativo) return;
-        const g = minhaPosicao(geral, partidaId);
-        const t = daTurma ? minhaPosicao(daTurma, partidaId) : undefined;
+        const g = minhaPosicao(geral);
+        const t = daTurma ? minhaPosicao(daTurma) : undefined;
         setDados({
-          geral: paraEntradas(geral, partidaId),
-          turma: daTurma ? paraEntradas(daTurma, partidaId) : undefined,
+          geral: paraEntradas(geral),
+          turma: daTurma ? paraEntradas(daTurma) : undefined,
           minhaPosicao: g.posicao,
           totalParticipantes: g.total,
           minhaPosicaoTurma: t?.posicao,
@@ -94,7 +97,7 @@ export function RankingContainer({
     return () => {
       ativo = false;
     };
-  }, [partidaId, turma]);
+  }, [partidaId, usuarioId, turma]);
 
   if (dados) {
     return <RankingScreen {...dados} onVoltar={onVoltar} />;
