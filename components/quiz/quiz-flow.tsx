@@ -26,8 +26,8 @@ import type { Pergunta, RespostaDada } from "@/lib/quiz/types";
 //   respostas dadas, e cronometra a partida (da 1ª pergunta na tela até
 //   responder a última).
 // - Resultado: grava a partida, as respostas e o tempo (registrar_partida).
-// - Ranking: melhores pontuações (geral e da turma), com a partida atual
-//   destacada.
+// - Ranking: melhor partida de cada participante (geral e da turma),
+//   desempate pelo menor tempo, com o jogador atual destacado.
 //
 // "Início" (resultado baixo) volta à identificação já preenchida: se o
 // jogador não mudar nome/turma, continua sendo o mesmo participante.
@@ -165,6 +165,7 @@ export function QuizFlow() {
         <RankingContainer
           key="ranking"
           partidaId={partidaId}
+          usuarioId={jogador.id}
           salvamento={salvamento}
           turma={jogador.turma}
           onTentarSalvar={() => void salvarPartida(jogador.id, respostas, tempoMs)}
