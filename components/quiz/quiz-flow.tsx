@@ -2,7 +2,9 @@
 
 import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { AnimatePresence, MotionConfig, motion } from "motion/react";
+import { BookOpen } from "lucide-react";
 
+import { GlossaryOverlay } from "@/components/quiz/glossary-overlay";
 import { PlayerForm } from "@/components/quiz/player-form";
 import { QuestionCard } from "@/components/quiz/question-card";
 import { RankingContainer } from "@/components/quiz/ranking-container";
@@ -49,6 +51,9 @@ export function QuizFlow() {
   // Confetes só na primeira vez que o resultado da partida aparece (não ao
   // voltar do ranking).
   const [jaCelebrou, setJaCelebrou] = useState(false);
+  // Glossário aberto por cima da tela atual (ver GlossaryOverlay).
+  const [glossarioAberto, setGlossarioAberto] = useState(false);
+  const fecharGlossario = useCallback(() => setGlossarioAberto(false), []);
   const [partidaId, setPartidaId] = useState<string | null>(null);
 
   // Busca (e embaralha) as perguntas e zera a partida.
@@ -237,9 +242,27 @@ export function QuizFlow() {
   const [chave, conteudo] = telaAtual();
   const ehPergunta = chave.startsWith("pergunta-");
 
+  // O glossário NÃO fica disponível durante as perguntas: vários verbetes
+  // (ex.: obsolescência programada, logística reversa) são praticamente a
+  // alternativa correta — consultá-lo no meio da pergunta entregaria a
+  // resposta e distorceria os dados da pesquisa. Aparece no formulário, no
+  // resultado e no ranking.
+  const mostrarBotaoGlossario = !ehPergunta;
+
   return (
     // reducedMotion="user": respeita quem pediu "reduzir movimento" no sistema.
     <MotionConfig reducedMotion="user">
+      {mostrarBotaoGlossario && !glossarioAberto && (
+        <button
+          type="button"
+          onClick={() => setGlossarioAberto(true)}
+          className="fixed left-4 top-4 z-50 flex h-10 items-center gap-2 rounded-full border-[0.5px] border-[var(--quiz-border)] bg-[var(--quiz-surface)] px-4 text-[13px] font-medium text-[var(--quiz-text-muted)] transition-colors hover:border-[var(--quiz-green-border)] hover:text-[var(--quiz-green-ink)]"
+        >
+          <BookOpen className="size-4" aria-hidden />
+          Glossário
+        </button>
+      )}
+      <GlossaryOverlay aberto={glossarioAberto} onFechar={fecharGlossario} />
       <AnimatePresence mode="wait" initial={false}>
         <motion.div
           key={chave}
