@@ -1,7 +1,7 @@
 // components/quiz/question-card.tsx
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 
 import { responder } from "@/lib/quiz/queries";
@@ -11,6 +11,9 @@ type Props = {
   pergunta: Pergunta;
   indice: number;        // posição atual (0-based)
   total: number;         // total de perguntas
+  /** Date.now() de quando a partida começou (1ª pergunta na tela) — alimenta
+   *  o cronômetro, que corre a partida inteira (não reinicia por pergunta). */
+  inicioMs: number | null;
   onProxima: (acertou: boolean, alternativaId: string) => void;
 };
 
@@ -19,13 +22,30 @@ const LETRAS = ["A", "B", "C", "D", "E"];
 
 const ehNaoSei = (texto: string) => texto.trim().toLowerCase() === "não sei.";
 
-export function QuestionCard({ pergunta, indice, total, onProxima }: Props) {
+// 75 000 ms → "01:15"
+function formatar(ms: number) {
+  const s = Math.max(0, Math.floor(ms / 1000));
+  const mm = String(Math.floor(s / 60)).padStart(2, "0");
+  const ss = String(s % 60).padStart(2, "0");
+  return `${mm}:${ss}`;
+}
+
+export function QuestionCard({ pergunta, indice, total, inicioMs, onProxima }: Props) {
   const [selecionada, setSelecionada] = useState<string | null>(null);
   // Correção vinda do servidor (função `responder`). Enquanto for null, a
   // pergunta não foi respondida — o navegador não sabe qual é a correta.
   const [correcao, setCorrecao] = useState<CorrecaoResposta | null>(null);
   const [verificando, setVerificando] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
+
+  // Cronômetro. O card é recriado a cada pergunta, então "agora" começa no
+  // instante atual (e não no início da partida, o que mostraria 00:00 por
+  // até 1 s em cada pergunta nova).
+  const [agora, setAgora] = useState(() => Date.now());
+  useEffect(() => {
+    const id = setInterval(() => setAgora(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, []);
 
   const respondida = correcao !== null;
   const progressoAnterior = (indice / total) * 100;
@@ -56,9 +76,17 @@ export function QuestionCard({ pergunta, indice, total, onProxima }: Props) {
 
   return (
     <div className="flex w-full flex-col gap-4 rounded-3xl border-[0.5px] border-[var(--quiz-border)] bg-[var(--quiz-surface)] p-5">
-      {/* Topo */}
-      <div className="flex items-center justify-between text-[var(--quiz-text-muted)]">
+      {/* Topo: × à esquerda, cronômetro centralizado, contador à direita */}
+      <div className="relative flex items-center justify-between text-[var(--quiz-text-muted)]">
         <span className="text-[20px] leading-none">×</span>
+        <span
+          className="absolute left-1/2 -translate-x-1/2 text-[13px] font-medium tabular-nums"
+          role="timer"
+          aria-label="Tempo decorrido"
+          data-testid="cronometro"
+        >
+          ⏱ {formatar(inicioMs === null ? 0 : agora - inicioMs)}
+        </span>
         <span className="text-[13px]">
           Pergunta {indice + 1} de {total}
         </span>

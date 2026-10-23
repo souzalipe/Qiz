@@ -1,27 +1,29 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { AnimatePresence, MotionConfig, motion } from "motion/react";
 import { BookOpen } from "lucide-react";
 
 import { GlossaryOverlay } from "@/components/quiz/glossary-overlay";
-import { PlayerForm } from "@/components/quiz/player-form";
+import { HomeScreen } from "@/components/quiz/home-screen";
 import { QuestionCard } from "@/components/quiz/question-card";
 import { RankingContainer } from "@/components/quiz/ranking-container";
 import { ResultCard } from "@/components/quiz/result-card";
-import { registrarPartida, type Jogador } from "@/lib/quiz/partidas";
+import { criarJogador, registrarPartida, type Jogador } from "@/lib/quiz/partidas";
 import { PONTOS_POR_ACERTO } from "@/lib/quiz/pontuacao";
 import { getPerguntas } from "@/lib/quiz/queries";
 import type { Pergunta, RespostaDada } from "@/lib/quiz/types";
 
 // Controlador do quiz.
 //
-// Fluxo:  identificação → jogando (pergunta 1…N) → resultado ⇄ ranking
-//                              ↑                           │
-//                              └────── jogar de novo ──────┘
+// Fluxo:  início → jogando (pergunta 1…N) → resultado ⇄ ranking
+//            │            ↑                           │
+//            │            └────── jogar de novo ──────┘
+//            └→ ranking (consulta, antes de jogar) → início
 //
-// - Identificação: nome e turma → grava em `usuarios` (uma vez por visita;
-//   "jogar de novo" mantém o mesmo jogador).
+// - Início (HomeScreen): nome, turma e aceite do aviso de privacidade (LGPD)
+//   → grava em `usuarios` com consentimento (uma vez por visita; "jogar de
+//   novo" mantém o mesmo jogador). Atalhos para o ranking e o glossário.
 // - Jogando: 10 perguntas sorteadas; acumula pontuação, acertos e as
 //   respostas dadas, e cronometra a partida (da 1ª pergunta na tela até
 //   responder a última).
@@ -29,7 +31,7 @@ import type { Pergunta, RespostaDada } from "@/lib/quiz/types";
 // - Ranking: melhor partida de cada participante (geral e da turma),
 //   desempate pelo menor tempo, com o jogador atual destacado.
 //
-// "Início" (resultado baixo) volta à identificação já preenchida: se o
+// "Início" (resultado baixo) volta à tela inicial já preenchida: se o
 // jogador não mudar nome/turma, continua sendo o mesmo participante.
 type Tela = "identificacao" | "jogando" | "resultado" | "ranking";
 
@@ -39,6 +41,10 @@ type StatusSalvamento = "salvando" | "salvo" | "erro";
 export function QuizFlow() {
   const [tela, setTela] = useState<Tela>("identificacao");
   const [jogador, setJogador] = useState<Jogador | null>(null);
+  const [salvandoCadastro, setSalvandoCadastro] = useState(false);
+  const [erroCadastro, setErroCadastro] = useState<string | null>(null);
+  // Ranking aberto pela tela inicial (sem partida): "voltar" volta ao início.
+  const [rankingDoInicio, setRankingDoInicio] = useState(false);
 
   const [perguntas, setPerguntas] = useState<Pergunta[] | null>(null);
   const [erro, setErro] = useState<string | null>(null);
@@ -58,10 +64,12 @@ export function QuizFlow() {
   const fecharGlossario = useCallback(() => setGlossarioAberto(false), []);
   const [partidaId, setPartidaId] = useState<string | null>(null);
 
-  // Cronômetro: início = quando a 1ª pergunta aparece (as perguntas já são
-  // carregadas durante o cadastro, então não dá para usar o fim da busca).
+  // Início da partida = quando a 1ª pergunta aparece (não quando a tela abre:
+  // as perguntas já carregam durante o cadastro, e o tempo de preencher nome e
+  // turma não deve contar). Zera a cada partida nova ("jogar de novo").
+  // Alimenta o cronômetro do QuestionCard e o tempo_ms gravado.
+  const [inicioMs, setInicioMs] = useState<number | null>(null);
   // Duração guardada para o "tentar de novo" da gravação.
-  const inicioRef = useRef<number | null>(null);
   const [tempoMs, setTempoMs] = useState(0);
 
   // Busca (e embaralha) as perguntas e zera a partida.
@@ -74,7 +82,7 @@ export function QuizFlow() {
     setRespostas([]);
     setPartidaId(null);
     setJaCelebrou(false);
-    inicioRef.current = null;
+    setInicioMs(null);
 
     getPerguntas()
       .then(setPerguntas)
@@ -91,10 +99,10 @@ export function QuizFlow() {
 
   // Dispara o cronômetro quando a 1ª pergunta entra na tela.
   useEffect(() => {
-    if (tela === "jogando" && perguntas?.length && inicioRef.current === null) {
-      inicioRef.current = Date.now();
+    if (tela === "jogando" && perguntas?.length && inicioMs === null) {
+      setInicioMs(Date.now());
     }
-  }, [tela, perguntas]);
+  }, [tela, perguntas, inicioMs]);
 
   // Grava a partida no Supabase. Chamado ao terminar (e no "tentar de novo").
   async function salvarPartida(jogadorId: string, lista: RespostaDada[], duracao: number) {
@@ -126,13 +134,37 @@ export function QuizFlow() {
 
     // Última pergunta → resultado (e grava); senão, avança.
     if (indice + 1 >= perguntas.length) {
-      const duracao = Date.now() - (inicioRef.current ?? Date.now());
+      const duracao = Date.now() - (inicioMs ?? Date.now());
       setTempoMs(duracao);
       setTela("resultado");
       void salvarPartida(jogador.id, novasRespostas, duracao);
     } else {
       setIndice(indice + 1);
     }
+  }
+
+  // "Começar" da tela inicial: cadastra (com o consentimento) e inicia.
+  async function comecar(dados: { nome: string; turma: string }) {
+    if (salvandoCadastro) return;
+    let atual = jogador;
+    // Mesmo participante de antes (voltou pelo "Início"): não cadastra de novo.
+    if (!atual || atual.nome !== dados.nome || atual.turma !== dados.turma) {
+      setSalvandoCadastro(true);
+      setErroCadastro(null);
+      try {
+        atual = await criarJogador(dados.nome, dados.turma);
+      } catch (e) {
+        console.error(e);
+        setErroCadastro("Não foi possível salvar seus dados. Verifique a conexão e tente de novo.");
+        return;
+      } finally {
+        setSalvandoCadastro(false);
+      }
+    }
+    setJogador(atual);
+    // Vindo do "Início" depois de uma partida: sorteia perguntas novas.
+    if (respostas.length > 0) carregarPerguntas();
+    setTela("jogando");
   }
 
   function jogarNovamente() {
@@ -146,14 +178,35 @@ export function QuizFlow() {
     if (tela === "identificacao") {
       return [
         "identificacao",
-        <PlayerForm
-          key="form"
+        <HomeScreen
+          key="home"
           inicial={jogador}
-          onIdentificado={(j) => {
-            setJogador(j);
-            // Vindo do "Início" depois de uma partida: sorteia perguntas novas.
-            if (respostas.length > 0) carregarPerguntas();
-            setTela("jogando");
+          salvando={salvandoCadastro}
+          erro={erroCadastro}
+          onComecar={(dados) => void comecar(dados)}
+          onVerRanking={() => {
+            setRankingDoInicio(true);
+            setTela("ranking");
+          }}
+          onVerGlossario={() => setGlossarioAberto(true)}
+        />,
+      ];
+    }
+
+    if (tela === "ranking" && rankingDoInicio) {
+      return [
+        "ranking-consulta",
+        <RankingContainer
+          key="ranking-consulta"
+          partidaId={null}
+          consulta
+          usuarioId={jogador?.id}
+          turma={jogador?.turma}
+          salvamento="salvo"
+          onTentarSalvar={() => {}}
+          onVoltar={() => {
+            setRankingDoInicio(false);
+            setTela("identificacao");
           }}
         />,
       ];
@@ -253,6 +306,7 @@ export function QuizFlow() {
         pergunta={pergunta}
         indice={indice}
         total={perguntas.length}
+        inicioMs={inicioMs}
         onProxima={registrarResposta}
       />,
     ];
