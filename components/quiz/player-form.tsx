@@ -1,8 +1,10 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
+import { ChevronDown } from "lucide-react";
 
 import { criarJogador, type Jogador } from "@/lib/quiz/partidas";
+import { TURMAS } from "@/lib/quiz/turmas";
 
 type Props = {
   // Jogador atual (ao voltar pelo "Início"): já vem preenchido e, se nome e
@@ -12,10 +14,15 @@ type Props = {
 };
 
 // Tela inicial: pede nome e turma e cadastra o participante em `usuarios`
-// antes de começar o quiz.
+// antes de começar o quiz. A turma vem de uma lista fixa (lib/quiz/turmas.ts),
+// para o filtro "Minha turma" do ranking bater exatamente.
 export function PlayerForm({ inicial, onIdentificado }: Props) {
   const [nome, setNome] = useState(inicial?.nome ?? "");
-  const [turma, setTurma] = useState(inicial?.turma ?? "");
+  // Turma fora da lista (cadastro antigo, ou nome alterado em turmas.ts)
+  // começa vazia, para a pessoa escolher de novo.
+  const [turma, setTurma] = useState(
+    inicial && TURMAS.includes(inicial.turma) ? inicial.turma : ""
+  );
   const [salvando, setSalvando] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
 
@@ -76,14 +83,29 @@ export function PlayerForm({ inicial, onIdentificado }: Props) {
 
       <label className="flex flex-col gap-[6px]">
         <span className="text-[13px] font-medium text-[var(--quiz-green-ink)]">Turma</span>
-        <input
-          className={campo}
-          value={turma}
-          onChange={(e) => setTurma(e.target.value)}
-          placeholder="Ex.: Mestrado 2026"
-          maxLength={80}
-          required
-        />
+        <div className="relative">
+          <select
+            className={`${campo} appearance-none bg-[var(--quiz-surface)] pr-10 ${
+              turma ? "" : "text-[var(--quiz-text-faint)]"
+            }`}
+            value={turma}
+            onChange={(e) => setTurma(e.target.value)}
+            required
+          >
+            <option value="" disabled>
+              Selecione sua turma
+            </option>
+            {TURMAS.map((t) => (
+              <option key={t} value={t} className="text-[var(--quiz-text)]">
+                {t}
+              </option>
+            ))}
+          </select>
+          <ChevronDown
+            className="pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2 text-[var(--quiz-text-muted)]"
+            aria-hidden
+          />
+        </div>
       </label>
 
       {erro && <p className="text-[13px] text-[var(--quiz-error-text)]">{erro}</p>}
