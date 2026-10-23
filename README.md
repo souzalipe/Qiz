@@ -79,6 +79,8 @@ versionados e aplicados em ordem (o prefixo é a data/hora):
 | `20261016120200_gabarito_protegido.sql` | Bloqueia `correta`/`feedback` para o app e fecha inserts diretos em `partidas`/`respostas` |
 | `20261019120000_redistribui_letra_correta.sql` | Reposiciona as alternativas: 8 corretas em cada letra A–D ("Não sei." em E) |
 | `20261019120100_classificacao.sql` | Função `classificacao`: ranking geral/por turma com total de participantes |
+| `20261020120000_remove_politicas_insert_antigas.sql` | Limpeza: remove as políticas de INSERT antigas (já sem efeito) — aplicar pelo SQL Editor |
+| `20261023120000_textos_v2.sql` | V2: textos revisados das 32 perguntas (alternativas equilibradas, siglas explicadas) |
 
 ### Seed (perguntas do quiz)
 
