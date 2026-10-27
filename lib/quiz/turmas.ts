@@ -7,6 +7,5 @@
 export const TURMAS: string[] = [
   "PPGDL 2026.1",
   "PPGDL 2026.2",
-  "Turma piloto",
   "Convidados",
 ];

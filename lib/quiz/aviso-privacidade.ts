@@ -18,5 +18,5 @@ export const AVISO_PRIVACIDADE = {
   direitos:
     "Você pode participar sem se identificar com o nome real (pode usar um apelido) e pode solicitar a exclusão dos seus dados a qualquer momento pelo contato abaixo.",
   // >>> SUBSTITUA pelo seu contato real de pesquisador <<<
-  contato: "Contato do pesquisador: [seu-e-mail@exemplo.com]",
+  contato: "Contato do pesquisador: felipe.nascimento.souza@souunisuam.com.br",
 };
