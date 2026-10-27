@@ -2,6 +2,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import { TURMAS } from "@/lib/quiz/turmas";
 import { AVISO_PRIVACIDADE } from "@/lib/quiz/aviso-privacidade";
 
@@ -39,8 +40,11 @@ export function HomeScreen({
     <div className="flex w-full flex-col gap-5 rounded-3xl border-[0.5px] border-[var(--quiz-border)] bg-[var(--quiz-surface)] px-5 pb-6 pt-8">
       {/* Marca */}
       <div className="flex flex-col items-center gap-3">
-        <div className="flex size-[64px] items-center justify-center rounded-[32px] bg-[var(--quiz-green)]">
-          <span className="text-[30px] text-[var(--quiz-on-green)]">♻</span>
+        {/* Ícone do projeto (public/logo.png; o mesmo da aba do navegador em app/icon.png).
+            No modo escuro ganha um disco claro atrás: os círculos verde-escuros do
+            ícone sumiriam no fundo escuro. */}
+        <div className="rounded-full dark:bg-[#e9ece9] dark:p-2">
+          <Image src="/logo.png" alt="" width={96} height={96} priority className="size-[96px]" />
         </div>
         <h1 className="text-center text-[22px] font-medium leading-[1.3] text-[var(--quiz-text)]">
           Quiz da Economia Circular
